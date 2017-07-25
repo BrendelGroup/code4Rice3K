@@ -1,0 +1,5 @@
+if [[ "python -V" =~ ".*2.7.*" ]]; then
+	echo "found it"
+else
+	echo "wrong version"
+fi

@@ -1,0 +1,74 @@
+#!/bin/bash
+set -euo pipefail
+## This script takes as its input argument the accession of a cultivar from the
+## 3K Rice Genome project and produces a VCF file containing all of the called
+## sites from that cultivar. It also produces VCF files for each chromosome of
+## the cultivar, with indels, Multiple Nucleotide Polymorphisms, and uncalled or
+## heterozygous sites removed.
+
+
+cultivar=$1
+
+root="$(dirname "$(readlink -f "$0")")"
+cd $root
+source $root/src/environment.sh
+
+# Requires
+echo "Checking for required software"
+. /etc/profile.d/modules.sh >/dev/null 2>&1
+module load samtools java/1.8.0_40 tabix/0.2.6 bcftools/1.3 vcftools/0.1.13 python/2.7.3 >/dev/null 2>&1
+error=""
+
+samtools --help >/dev/null 2>&1 || (echo "could not load samtools" >&2 && error="true")
+bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
+vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
+java -version >/dev/null 2>&1 || (echo "could not load Java" >&2 && error="true")
+python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
+
+set +e
+tabix --help >/dev/null 2>&1
+if [[ "$?" != "1" ]]; then
+	echo "could not load tabix" >&2
+	error="true"
+fi
+set -e
+
+if [[ -n "$error" ]]; then
+	echo "Exiting due to lack of software" >&2
+	exit 1
+fi
+
+# check reference genome
+if [[ ! -e ${reference}/IRGSP-1.0_genome.dict ]]; then
+	echo "You need to run INSTALL script" >&2
+	exit 1
+fi
+
+# BAM files of sequence read mapping
+# https://aws.amazon.com/public-datasets/3000-rice-genome/
+cd $maps
+echo "Getting BAM file for $cultivar"
+if [[ ! -e ${cultivar}.realigned.bam.bai ]]; then
+	wget https://s3.amazonaws.com/3kricegenome/Nipponbare/${cultivar}.realigned.bam
+	samtools index ${cultivar}.realigned.bam
+fi
+
+
+# The GATK tool Haplotype Caller is used to compare the bam file with the reference genome and generate a gvcf file
+# GATK must be version 3.6, not 3.7, and it seems to require either Oracle Java or OpenJDK Java 1.8.0_40 
+cd $calls
+echo "Generating GVCF"
+call_variants $cultivar
+
+# The GATK tool GenotypeGVCFs takes the gvcf file and produces a normal vcf.
+# The option -allSites is necessary for our purposes, so that called sites that match the reference will be able to be compared to SNPs in other cultivars.
+echo "Generating VCF"
+full_genotype $cultivar
+
+# Before merging VCFs from different cultivars, it is useful to remove indels and uncalled or heterozygous sites with "bcftools view".
+# It is also expedient to split the VCF by chromosome so that merges can be performed with some degree of parallelism.
+# This step is not necessary if a merge is not planned.
+echo "Splitting and cleaning VCF"
+clean_and_split_vcf $cultivar
+
+echo "FIN"
