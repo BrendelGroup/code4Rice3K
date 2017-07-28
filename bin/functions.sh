@@ -12,8 +12,7 @@ function call_variants() {
 		-R ${reference}/IRGSP-1.0_genome.fasta \
 		-I $maps/${cultivar}.realigned.bam \
 		-ERC GVCF \
-		-o $calls/${cultivar}.g.vcf \
-		-nct 8
+		-o $calls/${cultivar}.g.vcf
 }
 
 function genotype() {
@@ -37,8 +36,7 @@ function full_genotype() {
 		-R ${reference}/IRGSP-1.0_genome.fasta \
 		-V $calls/${cultivar}.g.vcf \
 		-allSites \
-		-o $calls/${cultivar}.full.vcf \
-		-nt 24
+		-o $calls/${cultivar}.full.vcf
 }
 
 

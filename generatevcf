@@ -10,13 +10,15 @@ set -euo pipefail
 cultivar=$1
 
 root="$(dirname "$(readlink -f "$0")")"
+#echo $root
+#root="$PBS_O_WORKDIR"
 cd $root
-source $root/src/environment.sh
+source $root/bin/environment.sh
 
 # Requires
 echo "Checking for required software"
-. /etc/profile.d/modules.sh >/dev/null 2>&1
-module load samtools java/1.8.0_40 tabix/0.2.6 bcftools/1.3 vcftools/0.1.13 python/2.7.3 >/dev/null 2>&1
+#. /etc/profile.d/modules.sh >/dev/null 2>&1
+#module load samtools java/1.8.0_40 tabix/0.2.6 bcftools/1.3 vcftools/0.1.13 python/2.7.3 >/dev/null 2>&1
 error=""
 
 samtools --help >/dev/null 2>&1 || (echo "could not load samtools" >&2 && error="true")
@@ -24,7 +26,6 @@ bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error=
 vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
 java -version >/dev/null 2>&1 || (echo "could not load Java" >&2 && error="true")
 python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
-
 set +e
 tabix --help >/dev/null 2>&1
 if [[ "$?" != "1" ]]; then

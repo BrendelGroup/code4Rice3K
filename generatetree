@@ -12,16 +12,15 @@ filename=$1
 cultivarlist=$(cat $filename)
 root="$(dirname "$(readlink -f "$0")")"
 cd $root
-source $root/src/environment.sh
+source $root/bin/environment.sh
 . /etc/profile.d/modules.sh >/dev/null 2>&1
 module load bcftools/1.3 tabix/0.2.6 vcftools/0.1.13 python/2.7.3 raxml >/dev/null 2>&1
 
 unset pipefail
 
-bcftools --help >/dev/null bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
+bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
 set +e
-tabix --help >/dev/null
-2>&1
+tabix -help >/dev/null 2>&1
 if [[ "$?" != "1" ]]; then
 	echo "could not load tabix" >&2
 	error="true"
@@ -89,4 +88,3 @@ raxmlHPC -f d -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -p 12345 
 
 # This can go a lot faster with openmpi
 #mpirun -n 6 raxmlHPC-MPI-AVX -f a -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
-

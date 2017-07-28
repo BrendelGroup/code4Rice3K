@@ -4,6 +4,7 @@ set -euo pipefail
 # Create work environment
 
 root="$(dirname "$(readlink -f "$0")")"
+#root="$PBS_O_WORKDIR"
 cd $root
 
 source $root/bin/environment.sh
@@ -38,4 +39,3 @@ rm ${src}/picard.jar
 
 cd $root
 echo "Installation Complete"
-
