@@ -1,17 +1,18 @@
 ## Code4Rice3K - HOWTO
---------------------------------------------------------------
-Before start using this workflow, you should have went through the INSTALL.md document by now and was able to run the `setup.sh` script 
+
+Before start using this workflow, you should have went through the `INSTALL.md` document by now and was able to run the `setup.sh` script 
 successfully after making sure all of the prerequisites are installed. 
 
 The workflow has two main steps. In the first step, the specified cultivar alignment file will be downloaded to the `maps` directory, 
 then both the HaplotypeCaller and GenotypeGVCFs tools will be called to generate a `.vcf` file from the downloaded `.bam` files. This simply 
 done by running the `generatevcf` script provided with a cultivar name.
 
-<dd>`bash generatevcf cultivar`</dd>
+	`bash generatevcf cultivar`
 
-where `cultivar` is any cultivar name, e.g. IRIS_313-10603. We have included 4 rice cultivar names in the provided text file 
-(testcultivars) for you test. This step can be time-consuming; for each cultivar it might take up to 48 hours when run on an 8-cpu 
-computer with a 30GB of ram.
+
+where `cultivar` is any cultivar name, e.g. IRIS_313-10603. We have included 4 rice cultivar names in a text file (testcultivars) under 
+the `demo` directory for you test. This step can be time-consuming as it is not designed to work on laptops or small computers; for each 
+cultivar it might take up to 48 hours when run on an 8-cpu computer with a 30GB of ram.
 
 In the second step, the script will take all the files generated using the `generatevcf` script as input files, and merge the
 chromosomes in parallel. It will also strip any site that doesn't have SNPs, and concatenate them into a new VCF file containing
@@ -21,7 +22,8 @@ is generated.
 For this step you need to make a list containing the names of all cultivars that need to be processed (similar to what we have done in 
 our `testcultivars` list), then call the script `generatetree` on that list, as follows:
 
-<dd>`bash generatetree testcultivars`</dd>
+	`bash generatetree testcultivars`
+
 
 **Note**: Here it took about 10 hours to process 20 cultivars. If more cultivars being processed, then more time might be needed.
 
