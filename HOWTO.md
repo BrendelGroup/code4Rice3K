@@ -1,7 +1,7 @@
 ## Code4Rice3K - HOWTO
 
 Before start using this workflow, you should have went through the `INSTALL.md` document by now and was able to run the `setup.sh` script 
-successfully after making sure all of the prerequisites are installed. 
+successfully after making sure all of the required softwares are installed. 
 
 The workflow has two main steps. In the first step, the specified cultivar alignment file will be downloaded to the `maps` directory, 
 then both the HaplotypeCaller and GenotypeGVCFs tools will be called to generate a `.vcf` file from the downloaded `.bam` files. This simply 
@@ -14,6 +14,12 @@ where `cultivar` is any cultivar name, e.g. IRIS_313-10603. We have included 4 r
 the `demo` directory for you test. This step can be time-consuming as it is not designed to work on laptops or small computers; for each 
 cultivar it might take up to 48 hours when run on an 8-cpu computer with a 30GB of ram.
 
+**Important**: If your running this workflow as a batch job using a high-performance computing machine, add the `hpc` option to your 
+command. For example, your command will be:
+
+	`bash generatevcf cultivar hpc`
+
+
 In the second step, the script will take all the files generated using the `generatevcf` script as input files, and merge the
 chromosomes in parallel. It will also strip any site that doesn't have SNPs, and concatenate them into a new VCF file containing
 only the sites with SNPs. A subset of these SNPs are chosen at random and used as an alignment from which a maximum-likelihood tree
@@ -25,7 +31,9 @@ our `testcultivars` list), then call the script `generatetree` on that list, as 
 	`bash generatetree testcultivars`
 
 
-**Note**: Here it took about 10 hours to process 20 cultivars. If more cultivars being processed, then more time might be needed.
+Here this step took about 10 hours to process 20 cultivars. If more cultivars being processed, then more time might be needed.
+
+Don't forget the `hpc` option if you are using a HPC computer.
 
 At this step you should end up with a single file ready to be viewed by a tree viewer program. For instance, we used the **FigTree
 v1.4.3** to visualize our tree.
