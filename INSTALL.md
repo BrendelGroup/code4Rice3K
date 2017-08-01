@@ -4,8 +4,10 @@
 
 You can simply obtain this entire workflow by cloning the Code4Rice3K into your local machine as follows:
 
-`git clone https://github.com/BrendelGroup/Code4Rice3K`  
-`cd Code4Rice3K`
+```
+git clone https://github.com/BrendelGroup/Code4Rice3K  
+cd Code4Rice3K
+```
 
 ## Software Requirements
 
