@@ -1,40 +1,37 @@
 ## Code4Rice3K - HOWTO
 
-Before start using this workflow, you should have went through the `INSTALL.md` document by now and was able to run the `setup.sh` script 
-successfully after making sure all of the required softwares are installed. 
+Before using this workflow, you should go through the `INSTALL.md` document and run the `setup.sh` script after making sure all of the required software is installed. 
 
-The workflow has two main steps. In the first step, the specified cultivar alignment file will be downloaded to the `maps` directory, 
-then both the HaplotypeCaller and GenotypeGVCFs tools will be called to generate a `.vcf` file from the downloaded `.bam` files. This simply 
-done by running the `generatevcf` script provided with a cultivar name.
+This workflow has two main scripts. 
+The first, `generatevcf`, is given a cultivar accession as its first argument and automates the following steps:
+- A BAM alignment file of reads for the specified cultivar is downloaded to the `maps` directory and indexed by samtools
+- The GATK tool HaplotypeCaller generates a GVCF file containing the variant sites in the specified caller
+- The GATK tool GenotypeGVCFs generates a VCF file containing every successfully called site for that cultivar
+- The VCF file is split by chromosome, and all indels, heterozygous sites, and Multiple Nucleotide Polymorphisms are removed
 
-	`bash generatevcf cultivar`
+Use: `./generatevcf $cultivar`, where `$cultivar` is any Rice3K cultivar accession, e.g. IRIS_313-10603. 
 
+The second script `generatetree`, takes as its first argument a text file containing three or more rice accessions and automates the following steps:
+- The VCF files generated for each chromosome by `generatevcf` are merged in parallel, excluding any sites that lack at least one SNP or are not called in all of the input cultivars
+- The merged chromosome VCFs are concatenated into one VCF
+- A subset of sites are chosen at random from the concatenated VCF and converted into a FASTA-format alignment of the cultivars
+- RAxML generates a maximum-likelihood tree based on the alignment
 
-where `cultivar` is any cultivar name, e.g. IRIS_313-10603. We have included 4 rice cultivar names in a text file (testcultivars) under 
-the `demo` directory for you test. This step can be time-consuming as it is not designed to work on laptops or small computers; for each 
-cultivar it might take up to 48 hours when run on an 8-cpu computer with a 30GB of ram.
+Use: `./generatetree $cultivarlist`, where `$cultivarlist` is text file containing three or more rice accessions separated by newlines.
 
-**Important**: If your running this workflow as a batch job using a high-performance computing machine, add the `hpc` option to your 
-command. For example, your command will be:
+The `demo` directory contains a text file, testcultivar.txt, that contains four accessions for testing.
+The following commands can be used to test the functionality of these scripts:
+`while read cultivar; do ./generatevcf $cultivar; done < demo/testcultivars.txt`
+`./generatetree demo/testcultivars.txt`
 
-	`bash generatevcf cultivar hpc`
+This can be time-consuming; the `generatevcf` step for a single cultivar might take up to 48 hours when run on an 8-cpu computer with 30GB of RAM.
+In order to improve on this, the workflow can be submitted as a batch job to a high-performance computing cluster.
+In this case, both `generatevcf` and `generatetree` require the string "hpc" as their second argument: `./generatevcf $cultivar hpc` and `./generatevcf $cultivarlist hpc`
+For example, on the Karst HPC cluster at Indiana University:
+`while read cultivar; do qsub -N "${cultivar}.generatevcf" -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatevcf -F "$cultivar hpc"; done < demo/testcultivars.txt`
+After these jobs finish running:
+`qsub -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatetree -F '${PBS_O_WORKDIR}/demo/testcultivars.txt hpc'`
 
-
-In the second step, the script will take all the files generated using the `generatevcf` script as input files, and merge the
-chromosomes in parallel. It will also strip any site that doesn't have SNPs, and concatenate them into a new VCF file containing
-only the sites with SNPs. A subset of these SNPs are chosen at random and used as an alignment from which a maximum-likelihood tree
-is generated.
-
-For this step you need to make a list containing the names of all cultivars that need to be processed (similar to what we have done in 
-our `testcultivars` list), then call the script `generatetree` on that list, as follows:
-
-	`bash generatetree testcultivars`
-
-
-Here this step took about 10 hours to process 20 cultivars. If more cultivars being processed, then more time might be needed.
-
-Don't forget the `hpc` option if you are using a HPC computer.
-
-At this step you should end up with a single file ready to be viewed by a tree viewer program. For instance, we used the **FigTree
-v1.4.3** to visualize our tree.
+After running `generatetree`, the `alignments` directory will contain RAxML output files, including a file labeled "bestTree".
+This can be visualized with tree viewing software such as [FigTree](http://tree.bio.ed.ac.uk/software/figtree/).
 
