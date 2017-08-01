@@ -34,13 +34,14 @@ You can do this by running:
 `samtools --help`
 
 If you want to install it, use:
-
-`cd $YOUR_PREFERRED_DIRECTORY/local/`  
-`wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5.tar.bz2`  
-`tar -xjf`  
-`cd samtools-1.5/`  
-`make`  
-`make install`  
+```
+cd $YOUR_PREFERRED_DIRECTORY/local/`  
+wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5.tar.bz2  
+tar -xjf  
+cd samtools-1.5/  
+make  
+make install
+```
 
 ### Tabix (version 0.2.6)
 See http://www.htslib.org/doc/tabix.html for details. Last update: August 1, 2017.
@@ -51,13 +52,14 @@ You can do this by:
 `tabix -help`
 
 If you want to install it, use:
-
-`cd $YOUR_PREFERRED_DIRECTORY/local/`  
-`wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download`  
-`tar -xjf`  
-`cd tabix-0.2.6`  
-`make`  
-`make install`  
+```
+cd $YOUR_PREFERRED_DIRECTORY/local/  
+wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download  
+tar -xjf  
+cd tabix-0.2.6  
+make  
+make install 
+```
 
 ### Bcftools (version 1.5)
 See http://www.htslib.org/download/ for details. Last update: August 1, 2017.
@@ -68,13 +70,14 @@ You can do this by running:
 `bcftools --help`
 
 If you want to install it, use:
-
-`cd $YOUR_PREFERRED_DIRECTORY/local/`  
-`wget https://github.com/samtools/bcftools/releases/download/1.5/bcftools-1.5.tar.bz2`  
-`tar -xjf`  
-`cd bcftools-1.5/`  
-`make`  
-`make install`
+```
+cd $YOUR_PREFERRED_DIRECTORY/local/  
+wget https://github.com/samtools/bcftools/releases/download/1.5/bcftools-1.5.tar.bz2  
+tar -xjf  
+cd bcftools-1.5/  
+make  
+make install
+```
 
 ### Vcftools (version 0.1.13)
 See http://vcftools.sourceforge.net for details. Last update: August 1, 2017.
@@ -85,13 +88,14 @@ You can do this by running:
 `vcftools --help`
 
 If you want to install it, use:
-
-`cd YOUR_PREFERRED_DIRECTORY/local`  
-`wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz/download`  
-`tar -zxf`  
-`./configure`  
-`make`  
-`make install`
+```
+cd YOUR_PREFERRED_DIRECTORY/local  
+wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz/download  
+tar -zxf  
+./configure  
+make  
+make install
+```
 
 ### Python2
 See https://www.python.org for details. Last update: August 1, 2017.
@@ -106,8 +110,8 @@ If that is not the case and you want to install it, then there is more than one 
 ### Biopython (version 1.70)
 See http://biopython.org for details. Last update: August 1, 2017.
 
-If you have administrative privilage access on your machine, use the [package  
-manager](http://biopython.org/wiki/Download#Packages) for best results. Otherwise, we recommend using pip.
+If you have administrative privilage access on your machine, use the [package manager](http://biopython.org/wiki/Download#Packages) for best results. 
+Otherwise, we recommend using pip.
 
 `pip install biopython`
 
