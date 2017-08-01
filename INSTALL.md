@@ -4,8 +4,7 @@
 
 You can simply obtain this entire workflow by cloning the Code4Rice3K into your local machine as follows:
 
-`git clone https://github.com/BrendelGroup/Code4Rice3K`
-
+`git clone https://github.com/BrendelGroup/Code4Rice3K`  
 `cd Code4Rice3K`
 
 ## Software Requirements
@@ -34,12 +33,12 @@ You can do this by running:
 
 If you want to install it, use:
 
-`cd $YOUR_PREFERRED_DIRECTORY/local/`
-`wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5.tar.bz2`
-`tar -xjf`
-`cd samtools-1.5/`
-`make`
-`make install`
+`cd $YOUR_PREFERRED_DIRECTORY/local/`  
+`wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5.tar.bz2`  
+`tar -xjf`  
+`cd samtools-1.5/`  
+`make`  
+`make install`  
 
 ### Tabix (version 0.2.6)
 See http://www.htslib.org/doc/tabix.html for details. Last update: August 1, 2017.
@@ -51,12 +50,12 @@ You can do this by:
 
 If you want to install it, use:
 
-`cd $YOUR_PREFERRED_DIRECTORY/local/`
-`wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download`
-`tar -xjf`
-`cd tabix-0.2.6`
-`make`
-`make install`
+`cd $YOUR_PREFERRED_DIRECTORY/local/`  
+`wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download`  
+`tar -xjf`  
+`cd tabix-0.2.6`  
+`make`  
+`make install`  
 
 ### Bcftools (version 1.5)
 See http://www.htslib.org/download/ for details. Last update: August 1, 2017.
@@ -68,11 +67,11 @@ You can do this by running:
 
 If you want to install it, use:
 
-`cd $YOUR_PREFERRED_DIRECTORY/local/`
-`wget https://github.com/samtools/bcftools/releases/download/1.5/bcftools-1.5.tar.bz2`
-`tar -xjf`
-`cd bcftools-1.5/`
-`make` 
+`cd $YOUR_PREFERRED_DIRECTORY/local/`  
+`wget https://github.com/samtools/bcftools/releases/download/1.5/bcftools-1.5.tar.bz2`  
+`tar -xjf`  
+`cd bcftools-1.5/`  
+`make`  
 `make install`
 
 ### Vcftools (version 0.1.13)
@@ -85,11 +84,11 @@ You can do this by running:
 
 If you want to install it, use:
 
-`cd YOUR_PREFERRED_DIRECTORY/local`
-`wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz/download`
-`tar -zxf`
-`./configure`
-`make`
+`cd YOUR_PREFERRED_DIRECTORY/local`  
+`wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz/download`  
+`tar -zxf`  
+`./configure`  
+`make`  
 `make install`
 
 ### Python2
