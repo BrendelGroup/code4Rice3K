@@ -1,5 +1,5 @@
 #!/bin/bash
-## This is the install file for code4Rice3K 
+## This is the install file for code4Rice3K
 set -euo pipefail
 
 # Create work environment
@@ -7,12 +7,12 @@ root="$(dirname "$(readlink -f "$0")")"
 echo "root=$root"
 cd $root
 source $root/bin/environment.sh
-
+# Check if the user specified that this is a High Performance Computing environment
 system_type=${1:-}
 if [[ "$system_type" == "hpc" ]]; then
 	. /etc/profile.d/modules.sh >/dev/null 2>&1
 	module load samtools 2>&1
-	echo "module loaded"
+	echo "samtools module loaded"
 fi
 
 # Download Picard tool

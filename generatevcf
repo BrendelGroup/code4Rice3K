@@ -7,13 +7,18 @@ set -euo pipefail
 ## heterozygous sites removed.
 
 cultivar=$1
-
+# Check if the user specified that this is a High Performance Computing environment
 system_type=${2:-}
 if [[ "$system_type" == "hpc" ]]; then
+	# If HPC, the job will not be invoked from the same directory the script is in.
+	# HPC environments should have an environmental variable that knows where the
+	# original script is though.
 	root="$PBS_O_WORKDIR"
+	# Presumably only HPC environments will need modules loaded
 	. /etc/profile.d/modules.sh >/dev/null 2>&1
 	module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
 else
+	# In non-HPC environments we can just check where the script is.
 	root="$(dirname "$(readlink -f "$0")")"
 fi
 
@@ -41,6 +46,7 @@ source $root/bin/environment.sh
 #		;;
 #esac
 
+# Test for presence of required software
 echo "Checking for required software"
 error=""
 samtools --help >/dev/null 2>&1 || (echo "could not load samtools" >&2 && error="true")
@@ -48,9 +54,10 @@ bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error=
 vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
 java -version >/dev/null 2>&1 || (echo "could not load Java" >&2 && error="true")
 python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
-set +e
-tabix --help >/dev/null 2>&1
-if [[ "$?" != "1" ]]; then
+# Tabix exits with error even if installed, so it needs a fancier test
+set +e #Temporarily disable strict error mode
+tabix -help >/dev/null 2>&1
+if [[ "$?" != "1" ]]; then #If tabix is not installed the error status should be 127
 	echo "could not load tabix" >&2
 	error="true"
 fi
@@ -78,7 +85,7 @@ fi
 
 
 # The GATK tool Haplotype Caller is used to compare the bam file with the reference genome and generate a gvcf file
-# GATK must be version 3.6, not 3.7, and it seems to require either Oracle Java or OpenJDK Java 1.8.0_40 
+# GATK must be version 3.6, not 3.7, and it seems to require either Oracle Java or OpenJDK Java 1.8.0_40
 cd $calls
 echo "Generating GVCF"
 call_variants $cultivar

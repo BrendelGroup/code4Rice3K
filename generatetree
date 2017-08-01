@@ -11,34 +11,41 @@ set -euo pipefail
 filename=$1
 cultivarlist=$(cat $filename)
 
+# Check if the user specified that this is a High Performance Computing environment
 system_type=${2:-}
 if [[ "$system_type" == "hpc" ]]; then
-        root="$PBS_O_WORKDIR"
-        . /etc/profile.d/modules.sh >/dev/null 2>&1
-        module load tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
+	# If HPC, the job will not be invoked from the same directory the script is in.
+	# HPC environments should have an environmental variable that knows where the
+	# original script is though.
+	root="$PBS_O_WORKDIR"
+	# Presumably only HPC environments will need modules loaded
+	. /etc/profile.d/modules.sh >/dev/null 2>&1
+	module load tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
 else
-    	root="$(dirname "$(readlink -f "$0")")"
+	# In non-HPC environments we can just check where the script is.
+	root="$(dirname "$(readlink -f "$0")")"
 fi
 
 cd $root
 source $root/bin/environment.sh
 
-unset pipefail
-
+# Test for presence of required software
 bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
-set +e
+vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
+python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
+raxml -h >/dev/null 2>&1 || (echo "could not load raxml" >&2 && error="true")
+# Tabix exits with error even if installed, so it needs a fancier test
+set +e #Temporarily disable strict error mode
 tabix -help >/dev/null 2>&1
-if [[ "$?" != "1" ]]; then
+if [[ "$?" != "1" ]]; then #If tabix is not installed the error status should be 127
 	echo "could not load tabix" >&2
 	error="true"
 fi
 set -e
-vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
 
-python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
-
-raxml -h >/dev/null 2>&1 || (echo "could not load raxml" >&2 && error="true")
-
+if [[ $error == "true" ]]; then
+	exit 1
+fi
 
 # If VCFs have not been cleaned and split, warn the user
 error=""
@@ -52,8 +59,6 @@ done
 if [[ $error == "true" ]]; then
 	exit 1
 fi
-
-set -euo pipefail
 
 # Once all of the cultivars are cleaned and split, the chromosomes can be merged by vcf-merge.
 # "bcftools merge" is supposed to be faster, but seems to have a problem with something in the format of these files.
