@@ -35,7 +35,7 @@ For example, on the Karst HPC cluster at Indiana University:
 
 After these jobs finish running:
 
-`qsub -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatetree -F '${PBS_O_WORKDIR}/demo/testcultivars.txt hpc'`
+`qsub -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatetree -F '$demo/testcultivars.txt hpc'`
 
 After running `generatetree`, the `alignments` directory will contain RAxML output files, including a file labeled "bestTree".
 This can be visualized with tree viewing software such as [FigTree](http://tree.bio.ed.ac.uk/software/figtree/).
