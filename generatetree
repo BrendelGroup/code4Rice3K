@@ -10,11 +10,18 @@ set -euo pipefail
 
 filename=$1
 cultivarlist=$(cat $filename)
-root="$(dirname "$(readlink -f "$0")")"
+
+system_type=${2:-}
+if [[ "$system_type" == "hpc" ]]; then
+        root="$PBS_O_WORKDIR"
+        . /etc/profile.d/modules.sh >/dev/null 2>&1
+        module load tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
+else
+    	root="$(dirname "$(readlink -f "$0")")"
+fi
+
 cd $root
 source $root/bin/environment.sh
-. /etc/profile.d/modules.sh >/dev/null 2>&1
-module load bcftools/1.3 tabix/0.2.6 vcftools/0.1.13 python/2.7.3 raxml >/dev/null 2>&1
 
 unset pipefail
 

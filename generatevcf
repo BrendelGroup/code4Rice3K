@@ -6,21 +6,43 @@ set -euo pipefail
 ## the cultivar, with indels, Multiple Nucleotide Polymorphisms, and uncalled or
 ## heterozygous sites removed.
 
-
 cultivar=$1
 
-root="$(dirname "$(readlink -f "$0")")"
-echo "root=$root"
-#root="$PBS_O_WORKDIR"
+system_type=${2:-}
+if [[ "$system_type" == "hpc" ]]; then
+	root="$PBS_O_WORKDIR"
+	. /etc/profile.d/modules.sh >/dev/null 2>&1
+	module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
+else
+	root="$(dirname "$(readlink -f "$0")")"
+fi
+
 cd $root
 source $root/bin/environment.sh
 
-# Requires
-echo "Checking for required software"
-. /etc/profile.d/modules.sh >/dev/null 2>&1
-module load samtools java/1.8.0_40 tabix/0.2.6 bcftools/1.3 vcftools/0.1.13 python/2.7.3 >/dev/null 2>&1
-error=""
+#case $2 in
+#	"hpc")
+#		root="$PBS_O_WORKDIR"
+#		echo "root=$root"
+#		cd $root
+#		source $root/bin/environment.sh
+#		echo "Loading modules"
+#		. /etc/profile.d/modules.sh >/dev/null 2>&1
+#		module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
+#		;;
+#	"pwd")
+#		root="$(dirname "$(readlink -f "$0")")"
+#		echo "root=$root"
+#		cd $root
+#		source $root/bin/environment.sh
+#		;;
+#	*)
+#		echo "Need to specify path: pwd or hpc"
+#		;;
+#esac
 
+echo "Checking for required software"
+error=""
 samtools --help >/dev/null 2>&1 || (echo "could not load samtools" >&2 && error="true")
 bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
 vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
@@ -72,4 +94,4 @@ full_genotype $cultivar
 echo "Splitting and cleaning VCF"
 clean_and_split_vcf $cultivar
 
-echo "FIN"
+echo "Finished"

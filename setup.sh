@@ -1,17 +1,21 @@
 #!/bin/bash
+## This is the install file for code4Rice3K 
 set -euo pipefail
 
 # Create work environment
-
 root="$(dirname "$(readlink -f "$0")")"
-#root="$PBS_O_WORKDIR"
+echo "root=$root"
 cd $root
-
 source $root/bin/environment.sh
-. /etc/profile.d/modules.sh >/dev/null 2>&1
-module load samtools >/dev/null 2>&1
-# Download Picard tool
 
+system_type=${1:-}
+if [[ "$system_type" == "hpc" ]]; then
+	. /etc/profile.d/modules.sh >/dev/null 2>&1
+	module load samtools 2>&1
+	echo "module loaded"
+fi
+
+# Download Picard tool
 cd $src
 echo "Downloading Picard"
 wget -qN "https://github.com/broadinstitute/picard/releases/download/2.10.3/picard.jar"
@@ -23,7 +27,6 @@ wget -qO- 'https://software.broadinstitute.org/gatk/download/auth?package=GATK-a
 rm -r resources/
 
 # Download reference sequence
-
 cd $reference
 echo "Downloading reference fasta"
 wget -qO- "http://rapdb.dna.affrc.go.jp/download/archive/irgsp1/IRGSP-1.0_genome.fasta.gz" | gunzip - > IRGSP-1.0_genome.fasta
@@ -34,8 +37,9 @@ samtools faidx IRGSP-1.0_genome.fasta
 rm -f IRGSP-1.0_genome.dict
 java -jar ${src}/picard.jar CreateSequenceDictionary R=IRGSP-1.0_genome.fasta O=IRGSP-1.0_genome.dict
 
-echo "Removing Picard because eff that"
+echo "Removing Picard because it is no longer needed"
 rm ${src}/picard.jar
 
 cd $root
+echo
 echo "Installation Complete"
