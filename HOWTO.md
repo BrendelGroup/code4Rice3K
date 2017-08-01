@@ -21,15 +21,20 @@ Use: `./generatetree $cultivarlist`, where `$cultivarlist` is text file containi
 
 The `demo` directory contains a text file, testcultivar.txt, that contains four accessions for testing.
 The following commands can be used to test the functionality of these scripts:
+
 `while read cultivar; do ./generatevcf $cultivar; done < demo/testcultivars.txt`
+  
 `./generatetree demo/testcultivars.txt`
 
 This can be time-consuming; the `generatevcf` step for a single cultivar might take up to 48 hours when run on an 8-cpu computer with 30GB of RAM.
 In order to improve on this, the workflow can be submitted as a batch job to a high-performance computing cluster.
 In this case, both `generatevcf` and `generatetree` require the string "hpc" as their second argument: `./generatevcf $cultivar hpc` and `./generatevcf $cultivarlist hpc`
 For example, on the Karst HPC cluster at Indiana University:
+
 `while read cultivar; do qsub -N "${cultivar}.generatevcf" -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatevcf -F "$cultivar hpc"; done < demo/testcultivars.txt`
+
 After these jobs finish running:
+
 `qsub -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatetree -F '${PBS_O_WORKDIR}/demo/testcultivars.txt hpc'`
 
 After running `generatetree`, the `alignments` directory will contain RAxML output files, including a file labeled "bestTree".
