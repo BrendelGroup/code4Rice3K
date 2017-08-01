@@ -8,9 +8,7 @@ The output of this workflow is a tree file showing the relationship among all pr
 
 First, please see the `INSTALL.md` file. 
 There you will find instructions for how to obtain this workflow and install prerequisite software, and then run the setup script. 
-Once this has been taken care of, proceed to the `HOWTO` file to start analyzing the genome of rice cultivars. 
-We provide a list of 4 cultivars that you can use to test this workflow and generate a tree. 
-You can find this list in text file `testcultivars`. 
+Next, read the `HOWTO` file for instructions and examples of using this workflow. 
 
 ## Overview of Directories
 
