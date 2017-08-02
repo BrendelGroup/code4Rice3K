@@ -7,9 +7,9 @@ set -euo pipefail
 ## subset of these SNPs are chosen at random and used as an alignment from which
 ## a maximum-likelihood tree is generated.
 
-
-filename=$1
-cultivarlist=$(cat $filename)
+inputfile=$1
+filename=${inputfile##*/}
+cultivarlist=$(cat $inputfile)
 
 # Check if the user specified that this is a High Performance Computing environment
 system_type=${2:-}
