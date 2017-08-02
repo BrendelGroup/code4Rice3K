@@ -97,7 +97,7 @@ make
 make install
 ```
 
-### Python2
+### Python 2.7
 See https://www.python.org for details. Last update: August 1, 2017.
 
 You can check the availability and version of bcftools on your machine by running:
@@ -113,14 +113,14 @@ See http://biopython.org for details. Last update: August 1, 2017.
 If you have administrative privilage access on your machine, use the [package manager](http://biopython.org/wiki/Download#Packages) for best results. 
 Otherwise, we recommend using pip.
 
-`pip install biopython`
+`pip install biopython --user`
 
 ### PyVCF (version 0.6.8)
 See https://pypi.python.org/pypi/PyVCF for details. Last upadate: August 1, 2017.
 
 Same as installing biopython, you can use:
 
-`pip install biopython`
+`pip install pyvcf --user`
 
 ### RAxML (version 8.2.11)
 See [RAxML](https://sco.h-its.org/exelixis/web/software/raxml/index.html) for details. Last update: August 1, 2017.
@@ -138,14 +138,11 @@ Then follow the instructions [here](https://github.com/stamatak/standard-RAxML) 
 
 ## Setup Instructions
 
-Running the `setup.sh` bash script is all you need to get you going and use the Code4Rice3K workflow. 
+Once you have all the required software packages installed, run `bash setup.sh` from the code4Rice3K directory.
+If you are running this script on a high-performance computing machine, please add the argument "hpc" to your command, it will 
+automatically load the necessary modules: `bash setup.sh hpc`
 
-`bash setup.sh`
-
-If you are running this script on a high-performance computing machine, please add the option `hpc` to your command, it will 
-automatically load the necessary modules:
-
-`bash setup.sh hpc`
-
-This script will take care of few things for you. 
-It will install some files necessary to this workflow; like the GATK tools themselves, the reference genome used in the 3k rice genome project, and it will create some necessary directories.
+This script will:
+- Create some necessary subdirectories for this workflow
+- Download some software binaries used by the workflow
+- Download and index the reference genome used by the Rice3K Genomes project
