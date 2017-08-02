@@ -82,7 +82,7 @@ vcf-concat chr*.cleaned.vcf.gz > ${filename%.*}.merge.cleaned.vcf
 randomsubsetvcf ${filename%.*}.merge.cleaned.vcf 100000 > ../alignments/${filename%.*}.100000SNPs.vcf
 cd $alignments
 # Then the VCF is turned into a fasta file with a python script.
-python ../src/snp2seq.py ${filename%.*}.100000SNPs.vcf
+python ../bin/snp2seq.py ${filename%.*}.100000SNPs.vcf
 
 cd $root
 fasta=${alignments}/${filename%.*}.100000SNPs.fasta
