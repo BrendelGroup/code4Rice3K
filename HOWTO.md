@@ -31,11 +31,11 @@ In order to improve on this, the workflow can be submitted as a batch job to a h
 In this case, both `generatevcf` and `generatetree` require the string "hpc" as their second argument: `./generatevcf $cultivar hpc` and `./generatevcf $cultivarlist hpc`
 For example, on the Karst HPC cluster at Indiana University:
 
-`while read cultivar; do qsub -N "${cultivar}.generatevcf" -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatevcf -F "$cultivar hpc"; done < demo/testcultivars.txt`
+`while read cultivar; do qsub -N "${cultivar}.generatevcf" -k o -j oe -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatevcf -F "$cultivar hpc"; done < demo/testcultivars.txt`
 
 After these jobs finish running:
 
-`qsub -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatetree -F 'demo/testcultivars.txt hpc'`
+`qsub  -k o -j oe -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatetree -F '${PBS_O_WORKDIR}/demo/testcultivars.txt hpc'`
 
 After running `generatetree`, the `alignments` directory will contain RAxML output files, including a file labeled "bestTree".
 This can be visualized with tree viewing software such as [FigTree](http://tree.bio.ed.ac.uk/software/figtree/).

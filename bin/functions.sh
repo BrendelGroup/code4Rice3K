@@ -4,8 +4,7 @@
 # function that will generate the gvcf file for a given cultivar
 
 function call_variants() {
-	#echo $gatk
-
+#TODO Add an argument for number of available processors
 	cultivar=$1
 
 	$gatk -T HaplotypeCaller \
@@ -17,8 +16,6 @@ function call_variants() {
 }
 
 function genotype() {
-	echo $gatk
-
 	cultivar=$1
 
 	$gatk -T GenotypeGVCFs \
@@ -29,8 +26,7 @@ function genotype() {
 }
 
 function full_genotype() {
-	echo $gatk
-
+#TODO Add an argument for number of available processors
 	cultivar=$1
 
 	$gatk -T GenotypeGVCFs \
@@ -71,6 +67,7 @@ function clean_vcf() {
 function clean_and_split_vcf() {
 	cultivar=$1
 	bgzip ${cultivar}.full.vcf && tabix -f ${cultivar}.full.vcf.gz
+#TODO Make this more sensible about parallelizing. As is, it will be really inefficient on a machine with fewer than 12 processors
 	for chromosome in chr{01,02,03,04,05,06,07,08,09,10,11,12}; do (
 		bcftools view --exclude-uncalled --exclude-types 'indels' --genotype ^het -r ${chromosome} -O v ${cultivar}.full.vcf.gz | awk ' /^#/ {print} length($4) == 1 {print} ' | bgzip -c > ../split/${cultivar}.${chromosome}.noindels_nohets_nomnps.vcf.gz; tabix ../split/${cultivar}.${chromosome}.noindels_nohets_nomnps.vcf.gz) &
 	done
@@ -83,7 +80,7 @@ function merge_chromosome() {
 	# The awk command filters any Multiple Nucleotide Polymorphisms, which are apparently a thing
 	< ../merges/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} length($4) == 1 {print} ' > ../merges/${chromosome}.merge.cleaned.vcf
 	bgzip ../merges/${chromosome}.merge.cleaned.vcf
-        tabix ../merges/${chromosome}.merge.cleaned.vcf.gz
+	tabix ../merges/${chromosome}.merge.cleaned.vcf.gz
 }
 
 function refilter_merged() {
