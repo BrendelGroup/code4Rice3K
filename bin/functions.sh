@@ -82,6 +82,8 @@ function merge_chromosome() {
 	vcf-merge *${chromosome}*.vcf.gz > ../merges/${chromosome}.merge.vcf
 	# The awk command filters any Multiple Nucleotide Polymorphisms, which are apparently a thing
 	< ../merges/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} length($4) == 1 {print} ' > ../merges/${chromosome}.merge.cleaned.vcf
+	bgzip ../merges/${chromosome}.merge.cleaned.vcf
+        tabix ../merges/${chromosome}.merge.cleaned.vcf.gz
 }
 
 function refilter_merged() {
