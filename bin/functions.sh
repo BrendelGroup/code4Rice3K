@@ -75,6 +75,7 @@ function clean_and_split_vcf() {
 }
 
 function merge_chromosome() {
+#TODO Add an argument that determines which cultivars are merged. Right now it's indiscriminate.
 	chromosome=$1
 	vcf-merge *${chromosome}*.vcf.gz > ../merges/${chromosome}.merge.vcf
 	# The awk command filters any Multiple Nucleotide Polymorphisms, which are apparently a thing
