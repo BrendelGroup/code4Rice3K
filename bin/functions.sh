@@ -69,7 +69,7 @@ function clean_and_split_vcf() {
 	bgzip ${cultivar}.full.vcf && tabix -f ${cultivar}.full.vcf.gz
 #TODO Make this more sensible about parallelizing. As is, it will be really inefficient on a machine with fewer than 12 processors
 	for chromosome in chr{01,02,03,04,05,06,07,08,09,10,11,12}; do (
-		bcftools view --exclude-uncalled --exclude-types 'indels' --genotype ^het -r ${chromosome} -O v ${cultivar}.full.vcf.gz | awk ' /^#/ {print} length($4) == 1 {print} ' | bgzip -c > ../split/${cultivar}.${chromosome}.noindels_nohets_nomnps.vcf.gz; tabix ../split/${cultivar}.${chromosome}.noindels_nohets_nomnps.vcf.gz) &
+		bcftools view --exclude-uncalled --exclude-types 'indels' --genotype ^het -r ${chromosome} -O v ${cultivar}.full.vcf.gz | awk ' /^#/ {print} length($4) == 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) {print} ' | bgzip -c > ../split/${cultivar}.${chromosome}.noindels_nohets_nomnps.vcf.gz; tabix ../split/${cultivar}.${chromosome}.noindels_nohets_nomnps.vcf.gz) &
 	done
 	wait
 }
@@ -78,8 +78,8 @@ function merge_chromosome() {
 #TODO Add an argument that determines which cultivars are merged. Right now it's indiscriminate.
 	chromosome=$1
 	vcf-merge *${chromosome}*.vcf.gz > ../merges/${chromosome}.merge.vcf
-	# The awk command filters any Multiple Nucleotide Polymorphisms, which are apparently a thing
-	< ../merges/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} length($4) == 1 {print} ' > ../merges/${chromosome}.merge.cleaned.vcf
+	# The awk command filters any Multiple Nucleotide Polymorphisms, and any sites that for some reason  are called as '<NON_REF>'
+	< ../merges/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} length($4) == 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) {print} ' > ../merges/${chromosome}.merge.cleaned.vcf
 	bgzip ../merges/${chromosome}.merge.cleaned.vcf
 	tabix ../merges/${chromosome}.merge.cleaned.vcf.gz
 }
