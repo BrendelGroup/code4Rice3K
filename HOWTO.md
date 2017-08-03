@@ -21,7 +21,7 @@ Use: `./generatetree $cultivarlist`, where `$cultivarlist` is text file containi
 
 The `demo` directory contains a text file, testcultivar.txt, that contains four accessions for testing.
 The following commands can be used to test the functionality of these scripts:
-```
+```programming
 while read cultivar; do ./generatevcf $cultivar; done < demo/testcultivars.txt  
 ./generatetree demo/testcultivars.txt
 ```
