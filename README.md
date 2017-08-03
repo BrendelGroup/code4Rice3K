@@ -4,6 +4,8 @@ This workflow is designed for the study of relationships among rice cultivars fr
 It also generate VCF files for each chromosome in the cultivar with indels, Multiple Nucleotide Polymorphisms, and any uncalled or heterozygous sites removed. 
 The output of this workflow is a tree file showing the relationship among all processed cultivars.
 
+**As of 2017-08-03 this workflow has been successfully tested on Indiana University's Karst and Carbonate HPC clusters.**
+
 ## Getting Started
 
 First, please see the `INSTALL.md` file. 
