@@ -20,7 +20,7 @@ if [[ "$system_type" == "hpc" ]]; then
 	root="$PBS_O_WORKDIR"
 	# Presumably only HPC environments will need modules loaded
 	. /etc/profile.d/modules.sh >/dev/null 2>&1
-	module load tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
+	module load tabix bcftools vcftools/0.1.13 python r raxml >/dev/null 2>&1
 else
 	# In non-HPC environments we can just check where the script is.
 	root="$(dirname "$(readlink -f "$0")")"
@@ -30,10 +30,11 @@ cd $root
 source $root/bin/environment.sh
 
 # Test for presence of required software
+error=""
 bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
 vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
 python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
-raxml -h >/dev/null 2>&1 || (echo "could not load raxml" >&2 && error="true")
+#raxml -h >/dev/null 2>&1 || (echo "could not load raxml" >&2 && error="true")
 # Tabix exits with error even if installed, so it needs a fancier test
 set +e #Temporarily disable strict error mode
 tabix -help >/dev/null 2>&1
@@ -82,20 +83,23 @@ vcf-concat chr*.cleaned.vcf.gz > ${filename%.*}.merge.cleaned.vcf
 randomsubsetvcf ${filename%.*}.merge.cleaned.vcf 100000 > ../alignments/${filename%.*}.100000SNPs.vcf
 cd $alignments
 # Then the VCF is turned into a fasta file with a python script.
+echo "Python time"
 python ../bin/snp2seq.py ${filename%.*}.100000SNPs.vcf
+echo "Python time over"
 
 cd $root
 fasta="${alignments}/${filename%.*}.100000SNPs.vcf.fasta"
-rm -f RAxML_${fasta%%.vcf.fasta}.ERROR
-rm -f RAxML_${fasta%%.vcf.fasta}.log
-rm -f RAxML*${fasta%%.vcf.fasta}*
+rm -f RAxML_${filename%.*}.ERROR
+rm -f RAxML_${filename%.*}.log
+rm -f RAxML*${filename%.*}*
 
 ## Model ASC_GTRGAMMA must be used to correct for the fact that we're only using SNPs
 
 # -f d means rapid hill-climbing algorithm
 #raxmlHPC -f d -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -p 12345 -s ${fasta} 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
-# run for karst. PTHREADS version w/ 11 threads.
-raxml -T 11 -f a -m ASC_GTRGAMMA -n ${filename%.*} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${filename%.*}.log || touch RAxML_${filename%.*}.ERROR
+
+# Version for Karst/Carbonate. PTHREADS version w/ 12 threads. This REQUIRES at least 12 processors.
+raxmlHPC-PTHREADS -T 12 --no-bfgs -f a -m ASC_GTRGAMMA -n ${filename%.*} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${filename%.*}.log || raxmlHPC-PTHREADS --asc-corr=lewis -T 12 --no-bfgs -f a -m ASC_GTRGAMMA -n ${filename%.*} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${filename%.*}.log || touch RAxML_${filename%.*}.ERROR
 
 # -f a means bootstrap analysis and bestTree in one run.
 #raxmlHPC -f a -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -N 100 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
