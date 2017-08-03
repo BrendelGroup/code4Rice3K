@@ -4,7 +4,7 @@
 
 You can simply obtain this entire workflow by cloning the Code4Rice3K into your local machine as follows:
 
-```
+```bash
 git clone https://github.com/BrendelGroup/Code4Rice3K  
 cd Code4Rice3K
 ```
@@ -34,7 +34,7 @@ You can do this by running:
 `samtools --help`
 
 If you want to install it, use:
-```
+```bash
 cd $YOUR_PREFERRED_DIRECTORY/local/`  
 wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5.tar.bz2  
 tar -xjf  
@@ -52,7 +52,7 @@ You can do this by:
 `tabix -help`
 
 If you want to install it, use:
-```
+```bash
 cd $YOUR_PREFERRED_DIRECTORY/local/  
 wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download  
 tar -xjf  
@@ -70,7 +70,7 @@ You can do this by running:
 `bcftools --help`
 
 If you want to install it, use:
-```
+```bash
 cd $YOUR_PREFERRED_DIRECTORY/local/  
 wget https://github.com/samtools/bcftools/releases/download/1.5/bcftools-1.5.tar.bz2  
 tar -xjf  
@@ -88,7 +88,7 @@ You can do this by running:
 `vcftools --help`
 
 If you want to install it, use:
-```
+```bash
 cd YOUR_PREFERRED_DIRECTORY/local  
 wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz/download  
 tar -zxf  
@@ -112,16 +112,16 @@ See http://biopython.org for details. Last update: August 1, 2017.
 
 If you have administrative privilage access on your machine, use the [package manager](http://biopython.org/wiki/Download#Packages) for best results. 
 Otherwise, we recommend using pip.
-
-`pip install biopython --user`
-
+```bash
+pip install biopython --user
+```
 ### PyVCF (version 0.6.8)
 See https://pypi.python.org/pypi/PyVCF for details. Last upadate: August 1, 2017.
 
 Same as installing biopython, you can use:
-
-`pip install pyvcf --user`
-
+```bash
+pip install pyvcf --user
+```
 ### RAxML (version 8.2.11)
 See [RAxML](https://sco.h-its.org/exelixis/web/software/raxml/index.html) for details. Last update: August 1, 2017.
 
@@ -131,9 +131,9 @@ You can do this by running:
 `raxml -help`
 
 For installations, you will have to clone the RAxML repository from github:
-
-`git clone https://github.com/stamatak/standard-RAxML.git`
-
+```bash
+git clone https://github.com/stamatak/standard-RAxML.git
+```
 Then follow the instructions [here](https://github.com/stamatak/standard-RAxML) for compiling it. 
 
 ## Setup Instructions
