@@ -9,7 +9,7 @@ The first, `generatevcf`, is given a cultivar accession as its first argument an
 - The GATK tool GenotypeGVCFs generates a VCF file containing every successfully called site for that cultivar
 - The VCF file is split by chromosome, and all indels, heterozygous sites, and Multiple Nucleotide Polymorphisms are removed
 
-Use: `bash ./generatevcf $cultivar`, where `$cultivar` is any Rice3K cultivar accession, e.g. IRIS_313-10603. 
+Use: `bash ./bin/generatevcf $cultivar`, where `$cultivar` is any Rice3K cultivar accession, e.g. IRIS_313-10603. 
 
 The second script `generatetree`, takes as its first argument a text file containing three or more rice accessions and automates the following steps:
 - The VCF files generated for each chromosome by `generatevcf` are merged in parallel, excluding any sites that lack at least one SNP or are not called in all of the input cultivars
@@ -17,12 +17,13 @@ The second script `generatetree`, takes as its first argument a text file contai
 - A subset of sites are chosen at random from the concatenated VCF and converted into a FASTA-format alignment of the cultivars
 - RAxML generates a maximum-likelihood tree based on the alignment
 
-Use: `./generatetree $cultivarlist`, where `$cultivarlist` is text file containing three or more rice accessions separated by newlines.
+Use: `bash ./bin/generatetree $cultivarlist`, where `$cultivarlist` is text file containing three or more rice accessions separated by 
+newlines.
 
 The `demo` directory contains a text file, testcultivar.txt, that contains four accessions for testing.
 The following commands can be used to test the functionality of these scripts:
 ```bash
-while read cultivar; do ./generatevcf $cultivar; done < demo/testcultivars.txt  
+while read cultivar; do ./bin/generatevcf $cultivar; done < demo/testcultivars.txt  
 ./generatetree demo/testcultivars.txt
 ```
 
@@ -31,12 +32,13 @@ In order to improve on this, the workflow can be submitted as a batch job to a h
 In this case, both `generatevcf` and `generatetree` require the string "hpc" as their second argument: `./generatevcf $cultivar hpc` and `./generatevcf $cultivarlist hpc`
 For example, on the Karst HPC cluster at Indiana University:
 ```bash
-while read cultivar; do qsub -N "${cultivar}.generatevcf" -k o -j oe -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatevcf -F "$cultivar hpc"; done < demo/testcultivars.txt
+while read cultivar; do qsub -N "${cultivar}.generatevcf" -k o -j oe -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb bin/generatevcf -F 
+"$cultivar hpc"; done < demo/testcultivars.txt
 ```
 
 After these jobs finish running:
 ```bash
-qsub  -k o -j oe -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatetree -F '${PBS_O_WORKDIR}/demo/testcultivars.txt hpc'
+qsub  -k o -j oe -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb bin/generatetree -F '${PBS_O_WORKDIR}/demo/testcultivars.txt hpc'
 ```
 
 After running `generatetree`, the `alignments` directory will contain RAxML output files, including a file labeled "bestTree".
