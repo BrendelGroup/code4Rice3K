@@ -56,7 +56,6 @@ cd $alignments
 echo "Creating fasta file"
 python ../bin/snp2seq.py ${filename%.*}.100000SNPs.vcf
 
-cd $root
 echo "Generating alignment"
 fasta="${alignments}/${filename%.*}.100000SNPs.vcf.fasta"
 rm -f RAxML_${filename%.*}.ERROR
