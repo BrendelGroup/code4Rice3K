@@ -1,4 +1,4 @@
-# Installion Instructions
+# Installation Instructions
 
 ## Getting the Code4Rice3K Workflow
 
