@@ -20,7 +20,17 @@ Now to check for the required packages, copy and paste the following command int
 ```bash
 module load java python samtools bcftools vcftools tabix raxml
 ```
-If everything is ok, then you should get a few lines informing you that these packages are installed along with its version.
+If everything is ok, then you should get a few lines informing you that these packages are installed along with their versions.
+You should see something like this:
+```bash
+Sun/Oracle Java SE Development Kit version 1.8.0_131 loaded.
+Python programming language version 2.7.13 loaded.
+samtools version 1.5 loaded.
+bcftools version 1.5 loaded.
+vcftools version 0.1.13 loaded.
+tabix version 0.2.6 loaded.
+raxml version 8.2.11 loaded.
+```
 If you want to check for the availibility of a different version of a certain software, you can do this using the "module avail $package", e.g. `module avail java`.
 If your system missing some key softwares (you can tell when you load the modules), or if you want to install softwares on your linux machine, then please follow 
 the short guide below. 
@@ -48,10 +58,11 @@ If you want to install it, use:
 ```bash
 cd $YOUR_PREFERRED_DIRECTORY/local/`  
 wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5.tar.bz2  
-tar -xjf  
-cd samtools-1.5/  
+tar xjf samtools-1.5.tar.bz2  
+cd samtools-1.5/
+./configure --without-curses --disable-lzma  
 make  
-make install
+make install		# You may need to use "sudo make install"
 ```
 
 ### Tabix (version 0.2.6)
@@ -60,14 +71,14 @@ See http://www.htslib.org/doc/tabix.html for details. Last update: August 1, 201
 First, check the availability and version of tabix on your machine.
 You can do this by:
 
-`tabix -help`
+`tabix --help`
 
 If you want to install it, use:
 ```bash
 cd $YOUR_PREFERRED_DIRECTORY/local/  
-wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download  
-tar -xjf  
-cd tabix-0.2.6  
+wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2  
+tar xjf tabix-0.2.6.tar.bz2
+cd tabix-0.2.6
 make  
 make install 
 ```
@@ -84,10 +95,11 @@ If you want to install it, use:
 ```bash
 cd $YOUR_PREFERRED_DIRECTORY/local/  
 wget https://github.com/samtools/bcftools/releases/download/1.5/bcftools-1.5.tar.bz2  
-tar -xjf  
-cd bcftools-1.5/  
+tar xjf bcftools-1.5.tar.bz2 
+cd bcftools-1.5/
+./configure --without-curses --disable-lzma    
 make  
-make install
+make install		# You may need to use "sudo make install"
 ```
 
 ### Vcftools (version 0.1.13)
@@ -101,10 +113,10 @@ You can do this by running:
 If you want to install it, use:
 ```bash
 cd YOUR_PREFERRED_DIRECTORY/local  
-wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz/download  
-tar -zxf  
-./configure  
-make  
+wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz  
+tar zxf vcftools_0.1.13.tar.gz
+cd vcftools_0.1.13 
+make
 make install
 ```
 
@@ -126,6 +138,7 @@ Otherwise, we recommend using pip.
 ```bash
 pip install biopython --user
 ```
+
 ### PyVCF (version 0.6.8)
 See https://pypi.python.org/pypi/PyVCF for details. Last upadate: August 1, 2017.
 
@@ -133,6 +146,7 @@ Same as installing biopython, you can use:
 ```bash
 pip install pyvcf --user
 ```
+
 ### RAxML (version 8.2.11)
 See [RAxML](https://sco.h-its.org/exelixis/web/software/raxml/index.html) for details. Last update: August 1, 2017.
 
