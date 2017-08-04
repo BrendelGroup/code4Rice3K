@@ -4,7 +4,7 @@ set -euo pipefail
 
 # Create work environment
 root="$(dirname "$(readlink -f "$0")")"
-echo "root=$root"
+
 cd $root
 source $root/bin/environment.sh
 # Check if the user specified that this is a High Performance Computing environment

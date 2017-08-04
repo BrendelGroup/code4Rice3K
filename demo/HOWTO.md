@@ -1,4 +1,4 @@
-## Code4Rice3K - HOWTO
+## Code4Rice3K HOWTO - an overview about how to use this workflow
 
 Before using this workflow, you should go through the `INSTALL.md` document and run the `setup.sh` script after making sure all of the required software is installed. 
 
@@ -41,4 +41,3 @@ qsub  -k o -j oe -l nodes=1:ppn=12,walltime=24:00:00,vmem=20gb generatetree -F '
 
 After running `generatetree`, the `alignments` directory will contain RAxML output files, including a file labeled "bestTree".
 This can be visualized with tree viewing software such as [FigTree](http://tree.bio.ed.ac.uk/software/figtree/).
-
