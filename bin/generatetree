@@ -28,39 +28,7 @@ fi
 
 cd $root
 source $root/bin/environment.sh
-
-# Test for presence of required software
-echo "Checking for required software"
-error=""
-bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
-vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
-python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
-raxmlHPC-PTHREADS -h >/dev/null 2>&1 || (echo "could not load raxml" >&2 && error="true")
-# Tabix exits with error even if installed, so it needs a fancier test
-set +e #Temporarily disable strict error mode
-tabix -help >/dev/null 2>&1
-if [[ "$?" != "1" ]]; then #If tabix is not installed the error status should be 127
-	echo "could not load tabix" >&2
-	error="true"
-fi
-set -e
-
-if [[ $error == "true" ]]; then
-	exit 1
-fi
-
-# If VCFs have not been cleaned and split, warn the user
-error=""
-for cultivar in $cultivarlist; do
-	if [[ ! -e ${split}/${cultivar}.chr12.noindels_nohets_nomnps.vcf.gz.tbi ]]; then
-		echo "You need to run generatevcf on ${cultivar}" >&2
-		error="true"
-	fi
-done
-
-if [[ $error == "true" ]]; then
-	exit 1
-fi
+check_prereq
 
 # Once all of the cultivars are cleaned and split, the chromosomes can be merged by vcf-merge.
 # "bcftools merge" is supposed to be faster, but seems to have a problem with something in the format of these files.
@@ -108,3 +76,5 @@ raxmlHPC-PTHREADS -T 12 --no-bfgs -f a -m ASC_GTRGAMMA -n ${filename%.*} -N 1000
 
 # This can go a lot faster with openmpi
 #mpirun -n 6 raxmlHPC-MPI-AVX -f a -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
+
+echo "Finished"
