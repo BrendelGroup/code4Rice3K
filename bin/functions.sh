@@ -132,7 +132,7 @@ function check_prereq() {
 	raxmlHPC-PTHREADS -h >/dev/null 2>&1 || (echo "could not load raxml" >&2 && error="true")
 	# Tabix exits with error even if installed, so it needs a fancier test
 	set +e #Temporarily disable strict error mode
-	tabix -help >/dev/null 2>&1
+	tabix --help >/dev/null 2>&1
 	if [[ "$?" != "1" ]]; then #If tabix is not installed the error status should be 127
         	echo "could not load tabix" >&2
         	error="true"
