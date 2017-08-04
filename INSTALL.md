@@ -12,8 +12,19 @@ cd Code4Rice3K
 ## Software Requirements
 
 This workflow has been developed and tested on Linux machines only. 
-That being said, there are other tools and libraries that need to be installed on your machine (if they are not installed already) as they are intrinsic to this workflow. 
-These tools are listed below with the versions that have been successfully tested.
+Specifically, Ubuntu and Red Hat Enterprise linux systems. 
+That being said, there are other softwares and tools that need to be installed on your machine (if they are not installed already) as they are intrinsic to this workflow.
+If you are running this workflow on a high performance computing (HPC) cluster, then the required softwares are part of modules environment management system.
+By loading different software packages, you can set and modify the programming environment as needed. 
+Now to check for the required packages, copy and paste the following command into your terminal and hit enter:
+```bash
+module load java python samtools bcftools vcftools tabix raxml
+```
+If everything is ok, then you should get a few lines informing you that these packages are installed along with its version.
+If you want to check for the availibility of a different version of a certain software, you can do this using the "module avail $package", e.g. `module avail java`.
+If your system missing some key softwares (you can tell when you load the modules), or if you want to install softwares on your linux machine, then please follow 
+the short guide below. 
+The versions listed are the ones that have been successfully tested.
 
 ### Java (version 8)
 See https://www.java.com/en/download/ for details. Last update: August 1, 2017.

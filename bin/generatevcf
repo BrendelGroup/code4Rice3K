@@ -16,7 +16,7 @@ if [[ "$system_type" == "hpc" ]]; then
 	root="$PBS_O_WORKDIR"
 	# Presumably only HPC environments will need modules loaded
 	. /etc/profile.d/modules.sh >/dev/null 2>&1
-	module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
+	module load samtools java tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
 else
 	# In non-HPC environments we can just check where the script is.
 	root="$(dirname "$(readlink -f "$0")")"
@@ -24,6 +24,7 @@ fi
 
 cd $root
 source $root/bin/environment.sh
+check_prereq 
 
 #case $2 in
 #	"hpc")
@@ -47,41 +48,41 @@ source $root/bin/environment.sh
 #esac
 
 # Test for presence of required software
-echo "Checking for required software"
-error=""
-samtools --help >/dev/null 2>&1 || (echo "could not load samtools" >&2 && error="true")
-bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
-vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
-java -version >/dev/null 2>&1 || (echo "could not load Java" >&2 && error="true")
-python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
+#echo "Checking for required software"
+#error=""
+#samtools --help >/dev/null 2>&1 || (echo "could not load samtools" >&2 && error="true")
+#bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
+#vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
+#java -version >/dev/null 2>&1 || (echo "could not load Java" >&2 && error="true")
+#python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
 # Tabix exits with error even if installed, so it needs a fancier test
-set +e #Temporarily disable strict error mode
-tabix -help >/dev/null 2>&1
-if [[ "$?" != "1" ]]; then #If tabix is not installed the error status should be 127
-	echo "could not load tabix" >&2
-	error="true"
-fi
-set -e
+#set +e #Temporarily disable strict error mode
+#tabix -help >/dev/null 2>&1
+#if [[ "$?" != "1" ]]; then #If tabix is not installed the error status should be 127
+#	echo "could not load tabix" >&2
+#	error="true"
+#fi
+#set -e
 
-if [[ -n "$error" ]]; then
-	echo "Exiting due to lack of software" >&2
-	exit 1
-fi
+#if [[ -n "$error" ]]; then
+#	echo "Exiting due to lack of software" >&2
+#	exit 1
+#fi
 
 # check reference genome
-if [[ ! -e ${reference}/IRGSP-1.0_genome.dict ]]; then
-	echo "You need to run INSTALL script" >&2
-	exit 1
-fi
+#if [[ ! -e ${reference}/IRGSP-1.0_genome.dict ]]; then
+#	echo "You need to run INSTALL script" >&2
+#	exit 1
+#fi
 
 # BAM files of sequence read mapping
 # https://aws.amazon.com/public-datasets/3000-rice-genome/
-cd $maps
-echo "Getting BAM file for $cultivar"
-if [[ ! -e ${cultivar}.realigned.bam.bai ]]; then
-	wget https://s3.amazonaws.com/3kricegenome/Nipponbare/${cultivar}.realigned.bam
-	samtools index ${cultivar}.realigned.bam
-fi
+#cd $maps
+#echo "Getting BAM file for $cultivar"
+#if [[ ! -e ${cultivar}.realigned.bam.bai ]]; then
+#	wget https://s3.amazonaws.com/3kricegenome/Nipponbare/${cultivar}.realigned.bam
+#	samtools index ${cultivar}.realigned.bam
+#fi
 
 
 # The GATK tool Haplotype Caller is used to compare the bam file with the reference genome and generate a gvcf file

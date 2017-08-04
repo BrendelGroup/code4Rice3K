@@ -20,7 +20,7 @@ if [[ "$system_type" == "hpc" ]]; then
 	root="$PBS_O_WORKDIR"
 	# Presumably only HPC environments will need modules loaded
 	. /etc/profile.d/modules.sh >/dev/null 2>&1
-	module load tabix bcftools vcftools/0.1.13 python r raxml >/dev/null 2>&1
+	module load samtools java tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
 else
 	# In non-HPC environments we can just check where the script is.
 	root="$(dirname "$(readlink -f "$0")")"
