@@ -31,7 +31,7 @@ vcftools version 0.1.13 loaded.
 tabix version 0.2.6 loaded.
 raxml version 8.2.11 loaded.
 ```
-If you want to check for the availibility of a different version of a certain software, you can do this using the "module avail $package", e.g. `module avail java`.
+If you want to check for the availability of a different version of a certain software, you can do this using the "module avail $package", e.g. `module avail java`.
 If your system missing some key softwares (you can tell when you load the modules), or if you want to install softwares on your linux machine, then please follow 
 the short guide below. 
 The versions listed are the ones that have been successfully tested.
@@ -58,7 +58,7 @@ If you want to install it, use:
 ```bash
 cd $YOUR_PREFERRED_DIRECTORY/local/`  
 wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5.tar.bz2  
-tar xjf samtools-1.5.tar.bz2  
+tar xvjf samtools-1.5.tar.bz2  
 cd samtools-1.5/
 ./configure --without-curses --disable-lzma  
 make  
@@ -77,10 +77,12 @@ If you want to install it, use:
 ```bash
 cd $YOUR_PREFERRED_DIRECTORY/local/  
 wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2  
-tar xjf tabix-0.2.6.tar.bz2
+tar xvjf tabix-0.2.6.tar.bz2
 cd tabix-0.2.6
-make  
-make install 
+make
+# add the following line to your .bashrc file found in your home directory, save your .bashrc file, and run `source .bashrc` in the 
+command line.
+export PATH=$PATH:/path_to_tabix_dir/tabix-0.2.6
 ```
 
 ### Bcftools (version 1.5)
@@ -95,7 +97,7 @@ If you want to install it, use:
 ```bash
 cd $YOUR_PREFERRED_DIRECTORY/local/  
 wget https://github.com/samtools/bcftools/releases/download/1.5/bcftools-1.5.tar.bz2  
-tar xjf bcftools-1.5.tar.bz2 
+tar xvjf bcftools-1.5.tar.bz2 
 cd bcftools-1.5/
 ./configure --without-curses --disable-lzma    
 make  
@@ -110,14 +112,17 @@ You can do this by running:
 
 `vcftools --help`
 
-If you want to install it, use:
+If you want to install it, first uou have to install **Tabix** (see above) then:
 ```bash
 cd YOUR_PREFERRED_DIRECTORY/local  
 wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz  
-tar zxf vcftools_0.1.13.tar.gz
+tar zvxf vcftools_0.1.13.tar.gz
 cd vcftools_0.1.13 
 make
-make install
+# add the following line to your .bashrc file found in your home directory, save your .bashrc file, and run `source .bashrc` in the 
+command line.
+export PERL5LIB=/path_to_vcftools/vcftools_0.1.13/perl
+export PATH=$PATH:/path_to_vcftools/vcftools_0.1.13/bin/
 ```
 
 ### Python 2.7
@@ -153,11 +158,17 @@ See [RAxML](https://sco.h-its.org/exelixis/web/software/raxml/index.html) for de
 First, check the availability and version of RAxML on your machine. 
 You can do this by running:
 
-`raxml -help`
+`raxmlHPC-PTHREADS -help`
 
 For installations, you will have to clone the RAxML repository from github:
 ```bash
 git clone https://github.com/stamatak/standard-RAxML.git
+cd standard-RAxML/
+make -f Makefile.gcc
+rm *.o
+# add the following line to your .bashrc file found in your home directory, save your .bashrc file, and run `source .bashrc` in the 
+command line.
+export PATH=$PATH:/path_to_raxml_directory/raxmlHPC-PTHREADS
 ```
 Then follow the instructions [here](https://github.com/stamatak/standard-RAxML) for compiling it. 
 
