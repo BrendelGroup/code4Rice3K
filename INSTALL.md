@@ -43,14 +43,13 @@ You can check the availability and version of java on your machine by running:
 
 `java -version`
 
-If you need to install it, please download the appropriate version [here](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html) and follow the 
-instructions.
+If you need to install it, please follow the instructions below:
 ```bash
 cd $YOUR_PREFERRED_DIRECTORY/local/
 wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
 tar zxvf jdk-8u131-linux-x64.tar.gz
-# Now use `vim` or `nano` to add the following lines into your `/etc/profile`:
-# If you can't write to `/etc/profile`, then make a custom script in `/etc/profile.d/
+# Now use "vim" or "nano" to add the following lines into your "/etc/profile":
+# If you can't write to "/etc/profile", then make a custom script in "/etc/profile.d/" and add:
 export JAVA_HOME=path_to_jdk1.8.0_131_directory
 export PATH=$JAVA_HOME/bin:$PATH
 ```
@@ -89,8 +88,8 @@ wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2
 tar xvjf tabix-0.2.6.tar.bz2
 cd tabix-0.2.6
 make
-# add the following line to your .bashrc file found in your home directory, save your .bashrc file, and run `source .bashrc` in the 
-command line.
+# add the following line to your ".bashrc" file found in your home directory, save your ".bashrc" file, and run "source .bashrc" in the 
+command-line.
 export PATH=$PATH:/path_to_tabix_dir/tabix-0.2.6
 ```
 
@@ -128,8 +127,8 @@ wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz
 tar zvxf vcftools_0.1.13.tar.gz
 cd vcftools_0.1.13 
 make
-# add the following line to your .bashrc file found in your home directory, save your .bashrc file, and run `source .bashrc` in the 
-command line.
+# add the following line to your ".bashrc" file found in your home directory, save your ".bashrc" file, and run "source .bashrc" in the 
+command-line.
 export PERL5LIB=/path_to_vcftools/vcftools_0.1.13/perl
 export PATH=$PATH:/path_to_vcftools/vcftools_0.1.13/bin/
 ```
@@ -175,8 +174,8 @@ git clone https://github.com/stamatak/standard-RAxML.git
 cd standard-RAxML/
 make -f Makefile.gcc
 rm *.o
-# add the following line to your .bashrc file found in your home directory, save your .bashrc file, and run `source .bashrc` in the 
-command line.
+# add the following line to your ".bashrc" file found in your home directory, save your ".bashrc" file, and run "source .bashrc" in the 
+command-line.
 export PATH=$PATH:/path_to_raxml_directory/raxmlHPC-PTHREADS
 ```
 
