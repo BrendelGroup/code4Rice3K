@@ -1,0 +1,45 @@
+#!/bin/bash
+set -euo pipefail
+## This script takes as its input argument the accession of a cultivar from the
+## 3K Rice Genome project and produces a VCF file containing all of the called
+## sites from that cultivar. It also produces VCF files for each chromosome of
+## the cultivar, with indels, Multiple Nucleotide Polymorphisms, and uncalled or
+## heterozygous sites removed.
+
+cultivar=$1
+# Check if the user specified that this is a High Performance Computing environment
+system_type=${2:-}
+if [[ "$system_type" == "hpc" ]]; then
+	# If HPC, the job will not be invoked from the same directory the script is in.
+	# HPC environments should have an environmental variable that knows where the
+	# original script is though.
+	root="$PBS_O_WORKDIR"
+	# Presumably only HPC environments will need modules loaded
+	. /etc/profile.d/modules.sh >/dev/null 2>&1
+	module load samtools java tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
+else
+	# In non-HPC environments we can just check where the script is.
+	root="$(dirname "$(readlink -f "$0")")"
+fi
+
+cd $root
+source $root/bin/environment.sh
+check_prereq 
+
+# The GATK tool Haplotype Caller is used to compare the bam file with the reference genome and generate a gvcf file
+cd $calls
+echo "Generating GVCF"
+call_variants $cultivar
+
+# The GATK tool GenotypeGVCFs takes the gvcf file and produces a normal vcf.
+# The option -allSites is necessary for our purposes, so that called sites that match the reference will be able to be compared to SNPs in other cultivars.
+echo "Generating VCF"
+full_genotype $cultivar
+
+# Before merging VCFs from different cultivars, it is useful to remove indels and uncalled or heterozygous sites with "bcftools view".
+# It is also expedient to split the VCF by chromosome so that merges can be performed with some degree of parallelism.
+# This step is not necessary if a merge is not planned.
+echo "Splitting and cleaning VCF"
+clean_and_split_vcf $cultivar
+
+echo "Finished"

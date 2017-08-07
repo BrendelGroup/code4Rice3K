@@ -4,7 +4,7 @@ set -euo pipefail
 
 # Create work environment
 root="$(dirname "$(readlink -f "$0")")"
-echo "root=$root"
+
 cd $root
 source $root/bin/environment.sh
 # Check if the user specified that this is a High Performance Computing environment
@@ -37,6 +37,7 @@ samtools faidx IRGSP-1.0_genome.fasta
 rm -f IRGSP-1.0_genome.dict
 java -jar ${src}/picard.jar CreateSequenceDictionary R=IRGSP-1.0_genome.fasta O=IRGSP-1.0_genome.dict
 
+cd $src
 echo "Removing Picard because it is no longer needed"
 rm ${src}/picard.jar
 

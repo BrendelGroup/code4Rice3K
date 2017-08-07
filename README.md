@@ -10,7 +10,7 @@ The output of this workflow is a tree file showing the relationship among all pr
 
 First, please see the `INSTALL.md` file. 
 There you will find instructions for how to obtain this workflow and install prerequisite software, and then run the setup script. 
-Next, read the `HOWTO` file for instructions and examples of using this workflow. 
+Next, read the `HOWTO` file found in `demo` directory for instructions and examples of using this workflow. 
 
 ## Overview of Directories
 

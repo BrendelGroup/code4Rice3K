@@ -119,3 +119,48 @@ function randomsubsetvcf() {
 	# The 1000 random lines should only come from legitimate sites
 	shuf -n $lines <(tail --lines=+${vcf_line_number} ${file})
 }
+
+# This function checks for the requirements for code4Rice3K
+function check_prereq() {
+	echo "Checking for required software"
+	error=""
+	samtools --help >/dev/null 2>&1 || (echo "could not load samtools" >&2 && error="true")
+	bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
+	vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
+	java -version >/dev/null 2>&1 || (echo "could not load Java" >&2 && error="true")
+	python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
+	raxmlHPC-PTHREADS -h >/dev/null 2>&1 || (echo "could not load raxml" >&2 && error="true")
+	# Tabix exits with error even if installed, so it needs a fancier test
+	set +e #Temporarily disable strict error mode
+	tabix --help >/dev/null 2>&1
+	if [[ "$?" != "1" ]]; then #If tabix is not installed the error status should be 127
+        	echo "could not load tabix" >&2
+        	error="true"
+	fi
+	set -e
+
+	# Check for biopython and pyvcf:
+	for module in vcf Bio; do
+		echo -n "Python module $module ... "
+		python -c "import $module" > /dev/null 2>&1
+		returnstatus=$?
+		if [ $returnstatus == "0" ]; then
+			echo OK
+		else
+			echo 'NOT INSTALLED!'
+		fi
+	done
+
+	if [[ -n "$error" ]]; then
+        	echo "Please install required software" >&2
+        	exit 1
+	fi
+
+	# check reference genome
+	if [[ ! -e ${reference}/IRGSP-1.0_genome.dict ]]; then
+        	echo "Reference genome not found. You need to run setup.sh script" >&2
+		exit 1
+	fi
+
+	echo "System requirements are met"
+}
