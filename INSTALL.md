@@ -44,7 +44,16 @@ You can check the availability and version of java on your machine by running:
 `java -version`
 
 If you need to install it, please download the appropriate version [here](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html) and follow the 
-instructions. 
+instructions.
+```bash
+cd $YOUR_PREFERRED_DIRECTORY/local/
+wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
+tar zxvf jdk-8u131-linux-x64.tar.gz
+# Now use `vim` or `nano` to add the following lines into your `/etc/profile`:
+# If you can't write to `/etc/profile`, then make a custom script in `/etc/profile.d/
+export JAVA_HOME=path_to_jdk1.8.0_131_directory
+export PATH=$JAVA_HOME/bin:$PATH
+```
 
 ### Samtools (version 1.5)
 See http://www.htslib.org/download/ for details. Last update: August 1, 2017.
@@ -56,7 +65,7 @@ You can do this by running:
 
 If you want to install it, use:
 ```bash
-cd $YOUR_PREFERRED_DIRECTORY/local/`  
+cd $YOUR_PREFERRED_DIRECTORY/local/  
 wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5.tar.bz2  
 tar xvjf samtools-1.5.tar.bz2  
 cd samtools-1.5/
@@ -112,7 +121,7 @@ You can do this by running:
 
 `vcftools --help`
 
-If you want to install it, first uou have to install **Tabix** (see above) then:
+If you want to install it, first you have to install **Tabix** (see above) then:
 ```bash
 cd YOUR_PREFERRED_DIRECTORY/local  
 wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz  
@@ -125,7 +134,7 @@ export PERL5LIB=/path_to_vcftools/vcftools_0.1.13/perl
 export PATH=$PATH:/path_to_vcftools/vcftools_0.1.13/bin/
 ```
 
-### Python 2.7
+### Python (version 2.7)
 See https://www.python.org for details. Last update: August 1, 2017.
 
 You can check the availability and version of bcftools on your machine by running:
@@ -170,13 +179,12 @@ rm *.o
 command line.
 export PATH=$PATH:/path_to_raxml_directory/raxmlHPC-PTHREADS
 ```
-Then follow the instructions [here](https://github.com/stamatak/standard-RAxML) for compiling it. 
 
 ## Setup Instructions
 
-Once you have all the required software packages installed, run `bash setup.sh` from the code4Rice3K directory.
+Once you have all the required software packages installed, run `bash bin/setup.sh` from the code4Rice3K directory.
 If you are running this script on a high-performance computing machine, please add the argument "hpc" to your command, it will 
-automatically load the necessary modules: `bash setup.sh hpc`
+automatically load the necessary modules: `bash bin/setup.sh hpc`
 
 This script will:
 - Create some necessary subdirectories for this workflow
