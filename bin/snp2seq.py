@@ -1,17 +1,9 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import logging
-from logging import debug
-#    logging.basicConfig(filename='snp2seq.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-debug('This is a log message.')
 import vcf
-debug('vcf imported')
 from Bio.Seq import Seq
-debug('Bio.Seq imported')
 from Bio import SeqIO
-debug('SeqIO imported')
 from Bio.SeqRecord import SeqRecord
 
 def vcf_to_fasta(input_file_name):
