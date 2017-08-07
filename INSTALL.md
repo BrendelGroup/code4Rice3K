@@ -181,9 +181,9 @@ export PATH=$PATH:/path_to_raxml_directory/raxmlHPC-PTHREADS
 
 ## Setup Instructions
 
-Once you have all the required software packages installed, run `bash bin/setup.sh` from the code4Rice3K directory.
+Once you have all the required software packages installed, run `bash ./bin/setup.sh` from the code4Rice3K directory.
 If you are running this script on a high-performance computing machine, please add the argument "hpc" to your command, it will 
-automatically load the necessary modules: `bash bin/setup.sh hpc`
+automatically load the necessary modules: `bash ./bin/setup.sh hpc`
 
 This script will:
 - Create some necessary subdirectories for this workflow
