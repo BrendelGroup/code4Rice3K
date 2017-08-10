@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # Create work environment
-root="$(dirname "$(readlink -f "$0")")"
-
+#root="$(dirname "$(readlink -f "$0")")"
+root="$(pwd)"
 cd $root
 source $root/bin/environment.sh
 # Check if the user specified that this is a High Performance Computing environment
@@ -16,18 +16,18 @@ if [[ "$system_type" == "hpc" ]]; then
 fi
 
 # Download Picard tool
-cd $src
+cd $root/src
 echo "Downloading Picard"
 wget -qN "https://github.com/broadinstitute/picard/releases/download/2.10.3/picard.jar"
 
 # Install GATK
-cd $src
+cd $root/src
 echo "Downloading GATK"
 wget -qO- 'https://software.broadinstitute.org/gatk/download/auth?package=GATK-archive&version=3.6-0-g89b7209' | tar xfj -
 rm -r resources/
 
 # Download reference sequence
-cd $reference
+cd $root/reference
 echo "Downloading reference fasta"
 wget -qO- "http://rapdb.dna.affrc.go.jp/download/archive/irgsp1/IRGSP-1.0_genome.fasta.gz" | gunzip - > IRGSP-1.0_genome.fasta
 
@@ -37,7 +37,7 @@ samtools faidx IRGSP-1.0_genome.fasta
 rm -f IRGSP-1.0_genome.dict
 java -jar ${src}/picard.jar CreateSequenceDictionary R=IRGSP-1.0_genome.fasta O=IRGSP-1.0_genome.dict
 
-cd $src
+cd $root
 echo "Removing Picard because it is no longer needed"
 rm ${src}/picard.jar
 
