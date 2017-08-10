@@ -23,7 +23,8 @@ if [[ "$system_type" == "hpc" ]]; then
 	module load samtools java tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
 else
 	# In non-HPC environments we can just check where the script is.
-	root="$(dirname "$(readlink -f "$0")")"
+	#root="$(dirname "$(readlink -f "$0")")"
+	root="$(pwd)"
 fi
 
 cd $root

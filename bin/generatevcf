@@ -19,12 +19,22 @@ if [[ "$system_type" == "hpc" ]]; then
 	module load samtools java tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
 else
 	# In non-HPC environments we can just check where the script is.
-	root="$(dirname "$(readlink -f "$0")")"
+	#root="$(dirname "$(readlink -f "$0")")"
+	root="$(pwd)"
 fi
 
 cd $root
 source $root/bin/environment.sh
 check_prereq 
+
+# BAM files of sequence read mapping
+# https://aws.amazon.com/public-datasets/3000-rice-genome/
+cd $maps
+echo "Getting BAM file for $cultivar"
+if [[ ! -e ${cultivar}.realigned.bam.bai ]]; then
+        wget https://s3.amazonaws.com/3kricegenome/Nipponbare/${cultivar}.realigned.bam
+        samtools index ${cultivar}.realigned.bam
+fi
 
 # The GATK tool Haplotype Caller is used to compare the bam file with the reference genome and generate a gvcf file
 cd $calls
