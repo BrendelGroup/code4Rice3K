@@ -10,7 +10,7 @@ export merges=${project_root}/merges
 export alignments=${project_root}/alignments
 export bin=${project_root}/bin
 
-mkdir -p $src $reference $maps $calls $merges $split $alignments
+mkdir -p $src $reference $calls $merges $split $alignments
 
 export picard="java -jar $src/picard.jar"
 export gatk="java -jar $src/GenomeAnalysisTK.jar"
