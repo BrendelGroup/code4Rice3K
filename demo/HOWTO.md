@@ -9,7 +9,9 @@ The first, `generatevcf`, is given a cultivar accession as its first argument an
 - The GATK tool GenotypeGVCFs generates a VCF file containing every successfully called site for that cultivar
 - The VCF file is split by chromosome, and all indels, heterozygous sites, and Multiple Nucleotide Polymorphisms are removed
 
-Use: `bash ./bin/generatevcf $cultivar`, where `$cultivar` is any Rice3K cultivar accession, e.g. IRIS_313-10603. 
+Use: `bash ./bin/generatevcf $cultivar`, where `$cultivar` is any Rice3K cultivar accession, e.g. IRIS_313-10603.
+
+However, for the sake of demonstration, use "sample-1, sample-2,sample-3, or sample-4" as a cultivar name.  
 
 The second script `generatetree`, takes as its first argument a text file containing three or more rice accessions and automates the following steps:
 - The VCF files generated for each chromosome by `generatevcf` are merged in parallel, excluding any sites that lack at least one SNP or are not called in all of the input cultivars
@@ -20,7 +22,7 @@ The second script `generatetree`, takes as its first argument a text file contai
 Use: `bash ./bin/generatetree $cultivarlist`, where `$cultivarlist` is text file containing three or more rice accessions separated by 
 newlines.
 
-The `demo` directory contains a text file, testcultivar.txt, that contains four accessions for testing.
+The `demo` directory contains a text file, testcultivar.txt, that contains four accessions (sample-1 to sample-4) for testing.
 The following commands can be used to test the functionality of these scripts:
 ```bash
 while read cultivar; do ./bin/generatevcf $cultivar; done < demo/testcultivars.txt  

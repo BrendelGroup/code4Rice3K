@@ -88,8 +88,7 @@ wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2
 tar xvjf tabix-0.2.6.tar.bz2
 cd tabix-0.2.6
 make
-# add the following line to your ".bashrc" file found in your home directory, save your ".bashrc" file, and run "source .bashrc" in the 
-command-line.
+# add the following line to your ".bashrc" file found in your home directory, save your ".bashrc" file, and run "source .bashrc" in the command line.
 export PATH=$PATH:/path_to_tabix_dir/tabix-0.2.6
 ```
 
@@ -127,8 +126,7 @@ wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz
 tar zvxf vcftools_0.1.13.tar.gz
 cd vcftools_0.1.13 
 make
-# add the following line to your ".bashrc" file found in your home directory, save your ".bashrc" file, and run "source .bashrc" in the 
-command-line.
+# add the following line to your ".bashrc" file found in your home directory, save your ".bashrc" file, and run "source .bashrc" in the command line.
 export PERL5LIB=/path_to_vcftools/vcftools_0.1.13/perl
 export PATH=$PATH:/path_to_vcftools/vcftools_0.1.13/bin/
 ```
@@ -174,8 +172,7 @@ git clone https://github.com/stamatak/standard-RAxML.git
 cd standard-RAxML/
 make -f Makefile.gcc
 rm *.o
-# add the following line to your ".bashrc" file found in your home directory, save your ".bashrc" file, and run "source .bashrc" in the 
-command-line.
+# add the following line to your ".bashrc" file found in your home directory, save your ".bashrc" file, and run "source .bashrc" in the command line.
 export PATH=$PATH:/path_to_raxml_directory/raxmlHPC-PTHREADS
 ```
 
