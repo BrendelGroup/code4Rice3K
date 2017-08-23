@@ -1,0 +1,11 @@
+#!/bash/bin
+
+# This script will check for prerequisites:
+
+root="$(pwd)"
+cd $root
+source $root/bin/environment.sh
+
+check_prereq
+
+ 

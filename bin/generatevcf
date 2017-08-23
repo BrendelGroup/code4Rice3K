@@ -6,50 +6,146 @@ set -euo pipefail
 ## the cultivar, with indels, Multiple Nucleotide Polymorphisms, and uncalled or
 ## heterozygous sites removed.
 
-cultivar=$1
+function usage() {
+	echo "
+		Usage: $0 -f <cultivar> -r <path> -c <no. of cpu threads> -n <no. of data threads> -s <workflow-step>
+		Example: $0 -f sample-1 -r pwd -c 12 -n 12 -s allSteps
+
+		code4Rice3K workflow can be run entirely or only part of the workflow can run.
+		Below are the possible steps that can chosen for the "generatevcf" script:
+
+		step 1 Downloading the .bam file
+		step 2 generating .gvcf file from .bam
+		step 3 generating .vcf file form .gvcf
+		step 4 generate .vcf file for each chromosome 
+	"
+}
+
+declare -a stepsToRun
+stepsToRun=(step1 step2 step3 step4)
+startFromStep=""
+stopAtStep=""
+runOnlyStep=""
+
+runStep1=0
+runStep2=0
+runStep3=0
+runStep4=0
+
+for step in ${stepsToRun[@]} ; do
+  if [[ $step == "step1" ]] ; then runStep1=1 ; fi
+  if [[ $step == "step2" ]] ; then runStep2=1 ; fi
+  if [[ $step == "step3" ]] ; then runStep3=1 ; fi
+  if [[ $step == "step4" ]] ; then runStep4=1 ; fi
+done
+
 # Check if the user specified that this is a High Performance Computing environment
-system_type=${2:-}
-if [[ "$system_type" == "hpc" ]]; then
-	# If HPC, the job will not be invoked from the same directory the script is in.
-	# HPC environments should have an environmental variable that knows where the
-	# original script is though.
-	root="$PBS_O_WORKDIR"
-	# Presumably only HPC environments will need modules loaded
-	. /etc/profile.d/modules.sh >/dev/null 2>&1
-	module load samtools java tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
-else
-	# In non-HPC environments we can just check where the script is.
-	#root="$(dirname "$(readlink -f "$0")")"
-	root="$(pwd)"
-fi
+while getopts "f:r:c:n:s:t:o:h" opt; do
+	case $opt in
+		f)
+			cultivar=${OPTARG}
+			echo "Processing ${cultivar}"
+			;;
+		r)
+			if [[ $OPTARG == hpc ]]; then
+				root="$PBS_O_WORKDIR"
+				echo "root=$root"
+				cd $root
+				source $root/bin/environment.sh
+				echo "Loading modules"
+				. /etc/profile.d/modules.sh >/dev/null 2>&1
+				module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
+			elif [[ $OPTARG == pwd ]]; then
+				root="$( cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+				echo "root=$root"
+				cd $root
+				source $root/bin/environment.sh
+			else
+				echo "Need to specify path: pwd or hpc"
+			fi
+			;;
+		c)
+			nct=${OPTARG} ;;
+		n)
+			nt=${OPTARG} ;;
+		s)
+			startFromStep=${OPTARG} ;;
+		t)
+			stopAtStep=${OPTARG} ;;
+		o)
+			runOnlyStep=${OPTARG} ;;
+		h)
+			usage; exit 1 ;;
+	esac
+done
 
 cd $root
-source $root/bin/environment.sh
-check_prereq 
+source $root/bin/environment.sh 
 
-# BAM files of sequence read mapping
-# https://aws.amazon.com/public-datasets/3000-rice-genome/
-cd $maps
-echo "Getting BAM file for $cultivar"
-if [[ ! -e ${cultivar}.realigned.bam.bai ]]; then
-        wget https://s3.amazonaws.com/3kricegenome/Nipponbare/${cultivar}.realigned.bam
-        samtools index ${cultivar}.realigned.bam
+#Step 1
+if [[ runStep1 == 1 ]]; then
+	# BAM files of sequence read mapping
+	# https://aws.amazon.com/public-datasets/3000-rice-genome/
+	echo ""
+	echo "=============================================================================="
+	echo " Step 1 Downloading BAM file for $cultivar ..."
+	echo "=============================================================================="
+	echo ""
+
+	cd $maps
+	if [[ ! -e ${cultivar}.realigned.bam.bai ]]; then
+        	wget https://s3.amazonaws.com/3kricegenome/Nipponbare/${cultivar}.realigned.bam
+        	samtools index ${cultivar}.realigned.bam
+	fi
+	echo "BAM file downloaded"
 fi
 
-# The GATK tool Haplotype Caller is used to compare the bam file with the reference genome and generate a gvcf file
-cd $calls
-echo "Generating GVCF"
-call_variants $cultivar
+# Step 2
+if [[ runStep2 == 1 ]]; then
+	echo ""
+	echo "=============================================================================="
+	echo "Step 2 Generating GVCF file from .bam ..."
+	echo "=============================================================================="
+	echo ""
 
-# The GATK tool GenotypeGVCFs takes the gvcf file and produces a normal vcf.
-# The option -allSites is necessary for our purposes, so that called sites that match the reference will be able to be compared to SNPs in other cultivars.
-echo "Generating VCF"
-full_genotype $cultivar
+	# The GATK tool Haplotype Caller is used to compare the bam file with the reference genome and generate a gvcf file
+	cd $calls
+	call_variants $cultivar $nct
+	echo "GVCF file created"
+fi
 
-# Before merging VCFs from different cultivars, it is useful to remove indels and uncalled or heterozygous sites with "bcftools view".
-# It is also expedient to split the VCF by chromosome so that merges can be performed with some degree of parallelism.
-# This step is not necessary if a merge is not planned.
-echo "Splitting and cleaning VCF"
-clean_and_split_vcf $cultivar
+# Step 3
+if [[ runStep3 == 1 ]]; then
+	echo ""
+	echo "=============================================================================="
+	echo "Step 3 Generating VCF file from .gvcf ..."
+	echo "=============================================================================="
+	echo ""
+	# The GATK tool GenotypeGVCFs takes the gvcf file and produces a normal vcf.
+	# The option -allSites is necessary for our purposes, so that called sites that match the reference will be able to 
+	be compared to SNPs in other cultivars.
+	cd $calls
+	full_genotype $cultivar $nt
+echo "VCF file created"
 
-echo "Finished"
+# Step 4
+if [[ runStep4 == 1 ]]; then
+	echo ""
+	echo "=============================================================================="
+	echo "Step 4 Splitting and cleaning VCF files ..."
+	echo "=============================================================================="
+	echo ""
+	# Before merging VCFs from different cultivars, it is useful to remove indels and uncalled or heterozygous sites with 
+"bcftools view".
+	# It is also expedient to split the VCF by chromosome so that merges can be performed with some degree of 
+parallelism.
+	# This step is not necessary if a merge is not planned.
+	cd $calls
+	clean_and_split_vcf $cultivar
+
+	echo "Splitting and cleaning is done"
+	echo ""
+fi
+echo ""
+echo "Finished generating files!"
+echo ""

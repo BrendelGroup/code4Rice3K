@@ -6,57 +6,26 @@
 function call_variants() {
 #TODO Add an argument for number of available processors
 	cultivar=$1
-
+	nct=$2
 	$gatk -T HaplotypeCaller \
 		-R ${reference}/IRGSP-1.0_genome.fasta \
 		-I $maps/${cultivar}.realigned.bam \
 		-ERC GVCF \
 		-o $calls/${cultivar}.g.vcf \
-		-nct 4
-}
-
-function genotype() {
-	cultivar=$1
-
-	$gatk -T GenotypeGVCFs \
-		-R ${reference}/IRGSP-1.0_genome.fasta \
-		-V $calls/${cultivar}.g.vcf \
-		-o $calls/${cultivar}.vcf \
-		-nt 24
+		-nct $2
 }
 
 function full_genotype() {
 #TODO Add an argument for number of available processors
 	cultivar=$1
-
+	nt=$2
 	$gatk -T GenotypeGVCFs \
 		-R ${reference}/IRGSP-1.0_genome.fasta \
 		-V $calls/${cultivar}.g.vcf \
 		-allSites \
 		-o $calls/${cultivar}.full.vcf \
-		-nt 12
+		-nt $2
 }
-
-
-# same as above, but only for a given loci rather than a full chromosome
-# loci can be in the gatk format chrname:begin-end
-# or it can be a file with a list of such formatted loci
-
-function call_variants_range() {
-	which java
-	echo $gatk
-
-	CULT=$1
-	LOCI=$2
-
-	$gatk -T HaplotypeCaller \
-		-L $LOCI \
-		-R ${reference}/IRGSP-1.0_genome.fasta \
-		-I $maps/${CULT}.realigned.bam \
-		-ERC GVCF \
-		-o $calls/${CULT}-${LOCI}.g.vcf
-}
-
 
 function clean_vcf() {
 	vcf=$1
@@ -124,17 +93,17 @@ function randomsubsetvcf() {
 function check_prereq() {
 	echo "Checking for required software"
 	error=""
-	samtools --help >/dev/null 2>&1 || (echo "could not load samtools" >&2 && error="true")
-	bcftools --help >/dev/null 2>&1 || (echo "could not load bcftools" >&2 && error="true")
-	vcftools --help >/dev/null 2>&1 || (echo "could not load vcftools" >&2 && error="true")
-	java -version >/dev/null 2>&1 || (echo "could not load Java" >&2 && error="true")
-	python --version >/dev/null 2>&1 || (echo "could not load Python 2.7" >&2 && error="true")
-	raxmlHPC-PTHREADS -h >/dev/null 2>&1 || (echo "could not load raxml" >&2 && error="true")
+	samtools --help >/dev/null 2>&1 || (echo "could not find samtools, please install" >&2 && error="true")
+	bcftools --help >/dev/null 2>&1 || (echo "could not find bcftools, please install" >&2 && error="true")
+	vcftools --help >/dev/null 2>&1 || (echo "could not find vcftools, please install" >&2 && error="true")
+	java -version >/dev/null 2>&1 || (echo "could not find Java, please install" >&2 && error="true")
+	python --version >/dev/null 2>&1 || (echo "could not find Python 2.7, please install" >&2 && error="true")
+	raxmlHPC-PTHREADS -h >/dev/null 2>&1 || (echo "could not find raxml, please install" >&2 && error="true")
 	# Tabix exits with error even if installed, so it needs a fancier test
 	set +e #Temporarily disable strict error mode
 	tabix --help >/dev/null 2>&1
 	if [[ "$?" != "1" ]]; then #If tabix is not installed the error status should be 127
-        	echo "could not load tabix" >&2
+        	echo "could not find tabix, please install" >&2
         	error="true"
 	fi
 	set -e
@@ -147,7 +116,7 @@ function check_prereq() {
 		if [ $returnstatus == "0" ]; then
 			echo OK
 		else
-			echo 'NOT INSTALLED!'
+			echo "Please install biopython and pyvcf"
 		fi
 	done
 
