@@ -17,10 +17,19 @@ echo "=========================================================="
 echo "System-wide installation of Biopython and PyVCF libraries"
 echo "=========================================================="
 echo ""
-sudo apt install python-pip
-pip install biopython
-pip install pyvcf
-
+# Check for biopython and pyvcf:
+for module in vcf Bio; do
+	echo -n "Python module $module ... "
+        python -c "import $module" > /dev/null 2>&1
+        returnstatus=$?
+        if [ $returnstatus == "0" ]; then
+		echo OK
+	else
+		sudo apt install python-pip
+		pip install biopython
+		pip install pyvcf
+	fi
+done
 echo ""
 echo "=========================================================="
 echo "Downloading the code4Rice3K workflow"
@@ -41,7 +50,7 @@ echo "Installing Java"
 echo "=========================================================="
 echo ""
 which java
-if [[ $? ==1 ]]; then
+if [[ $? == 1 ]]; then
 	wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" 
 http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz tar zxvf 
 jdk-8u131-linux-x64.tar.gz

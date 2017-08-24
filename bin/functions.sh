@@ -106,6 +106,7 @@ function check_prereq() {
         	echo "could not find tabix, please install" >&2
         	error="true"
 	fi
+	echo "Softwares are installed"
 	set -e
 
 	# Check for biopython and pyvcf:

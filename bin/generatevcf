@@ -92,10 +92,32 @@ while getopts "f:r:c:n:s:t:o:h" opt; do
 			stopAtStep=${OPTARG} ;;
 		o)
 			runOnlyStep=${OPTARG} ;;
-		h)
+		/?|*|h)
 			usage; exit 1 ;;
 	esac
 done
+
+if [[ $startFromStep != "" ]] ; then
+	i=-1
+		for step in ${stepsToRun[@]} ; do
+			((++i))
+			if [[ $step != $startFromStep ]] ; then unset stepsToRun[$i] ; else break ; fi
+		done
+fi
+
+unsetflag=0
+if [[ $stopAtStep != "" ]] ; then
+	for step in ${stepsToRun[@]} ; do
+		((++i))
+		if [[ $step == $stopAtStep ]] ; then unsetflag=1 ; ((--i))
+		else  if [[ $unsetflag == 1 ]] ; then unset stepsToRun[$i] ; fi ;  fi
+	done
+fi
+
+if [[ $runOnlyStep != "" ]] ; then
+	stepsToRun=($runOnlyStep)
+fi
+
 
 cd $root
 source $root/bin/environment.sh 
@@ -130,6 +152,7 @@ if [[ runStep2 == 1 ]]; then
 	cd $calls
 	call_variants $cultivar $nct
 	echo "GVCF file created"
+	echo ""
 fi
 
 # Step 3
@@ -140,11 +163,14 @@ if [[ runStep3 == 1 ]]; then
 	echo "=============================================================================="
 	echo ""
 	# The GATK tool GenotypeGVCFs takes the gvcf file and produces a normal vcf.
-	# The option -allSites is necessary for our purposes, so that called sites that match the reference will be able to 
-	be compared to SNPs in other cultivars.
+	# The option -allSites is necessary for our purposes, so that called sites that match the reference 
+	# will be able to be compared to SNPs in other cultivars.
 	cd $calls
 	full_genotype $cultivar $nt
-echo "VCF file created"
+
+	echo "VCF file created"
+	echo ""
+fi
 
 # Step 4
 if [[ runStep4 == 1 ]]; then
@@ -153,10 +179,8 @@ if [[ runStep4 == 1 ]]; then
 	echo "Step 4 Splitting and cleaning VCF files ..."
 	echo "=============================================================================="
 	echo ""
-	# Before merging VCFs from different cultivars, it is useful to remove indels and uncalled or heterozygous sites with 
-"bcftools view".
-	# It is also expedient to split the VCF by chromosome so that merges can be performed with some degree of 
-parallelism.
+	# Before merging VCFs from different cultivars, it is useful to remove indels and uncalled or heterozygous sites with bcftools view.
+	# It is also expedient to split the VCF by chromosome so that merges can be performed with some degree of parallelism.
 	# This step is not necessary if a merge is not planned.
 	cd $calls
 	clean_and_split_vcf $cultivar
@@ -167,3 +191,4 @@ fi
 echo ""
 echo "Finished generating files!"
 echo ""
+exit
