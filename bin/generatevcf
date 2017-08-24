@@ -8,18 +8,36 @@ set -euo pipefail
 
 function usage() {
 	echo "
-		Usage: $0 -f <cultivar> -r <path> -c <no. of cpu threads> -n <no. of data threads> -s <workflow-step>
-		Example: $0 -f sample-1 -r pwd -c 12 -n 12 -s allSteps
+		Code4Rice3K Help Section:
+		=========================
+
+		Usage: $0 -f <cultivar> -r <path> -c <cpu_threads> -n <data_threads> -s <start_from_step> -t <stop_at_step> -o <run_only_step>
+		Example: $0 -f sample-1 -r pwd -c 12 -n 12
+		
+		Mandatory options:
+		-f <cultivar>		:	[string] the name of the chosen rice cultivar
+		-r <path>		:	[string] either "pwd" if run locally, or "hpc" if run on HPC computer
+		-c <cpu_threads>	:	[int] the number of CPU threads used by GATK (4-12 is recommended)
+		-n <data_threads>	:	[int] the number of data threads used by GATK (6-24 is recommended)
+
+		* Optional setings:
+		-s <start_from_step>	:	[int] the number of the starting step, must be between 1-4 (see below) 
+		-t <stop_at_step>	:	[int] the number of the last step, must be between 1-4 (see below)
+		-o <run_only_step>	:	[int] the number of the step to run (see below)
+
+		-h			:	disply this help message
 
 		code4Rice3K workflow can be run entirely or only part of the workflow can run.
 		Below are the possible steps that can chosen for the "generatevcf" script:
 
-		step 1 Downloading the .bam file
-		step 2 generating .gvcf file from .bam
-		step 3 generating .vcf file form .gvcf
-		step 4 generate .vcf file for each chromosome 
+		step 1 downloading the .bam file
+		step 2 generating .gvcf file .bam, ATTN: To skip to this step, previous steps must have run successfully
+		step 3 generating .vcf file from .gvcf, ATTN: To skip to this step, previous steps must have run successfully
+		step 4 generate .vcf file for each chromosome, ATTN: To skip to this step, previous steps must have run successfully
 	"
 }
+
+if [ -z "$*" ]; then usage ; exit 1 ; fi
 
 declare -a stepsToRun
 stepsToRun=(step1 step2 step3 step4)
@@ -56,7 +74,7 @@ while getopts "f:r:c:n:s:t:o:h" opt; do
 				. /etc/profile.d/modules.sh >/dev/null 2>&1
 				module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
 			elif [[ $OPTARG == pwd ]]; then
-				root="$( cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+				root="$(pwd)"
 				echo "root=$root"
 				cd $root
 				source $root/bin/environment.sh

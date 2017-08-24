@@ -11,64 +11,172 @@ inputfile=$1
 filename=${inputfile##*/}
 cultivarlist=$(cat $inputfile)
 
+unction usage() {
+        echo "
+                Code4Rice3K Help Section:
+                =========================
+
+                Usage: $0 -f <cultivar> -r <path> -c <cpu_threads> -n <data_threads> -s <start_from_step> -t <stop_at_step> -o <run_only_step>
+                Example: $0 -f sample-1 -r pwd -c 12 -n 12
+                
+                Mandatory options:
+                -f <cultivar>           :       [string] the name of the chosen rice cultivar
+                -r <path>               :       [string] either "pwd" if run locally, or "hpc" if run on HPC computer
+                -c <cpu_threads>        :       [int] the number of CPU threads used by GATK (4-12 is recommended)
+                -n <data_threads>       :       [int] the number of data threads used by GATK (6-24 is recommended)
+
+                * Optional setings:
+                -s <start_from_step>    :       [int] the number of the starting step, must be between 1-4 (see below) 
+                -t <stop_at_step>       :       [int] the number of the last step, must be between 1-4 (see below)
+                -o <run_only_step>      :       [int] the number of the step to run (see below)
+
+                -h                      :       disply this help message
+
+                code4Rice3K workflow can be run entirely or only part of the workflow can run.
+                Below are the possible steps that can chosen for the "generatevcf" script:
+
+                step 1 downloading the .bam file
+                step 2 generating .gvcf file .bam, ATTN: To skip to this step, previous steps must have run successfully
+                step 3 generating .vcf file from .gvcf, ATTN: To skip to this step, previous steps must have run successfully
+                step 4 generate .vcf file for each chromosome, ATTN: To skip to this step, previous steps must have run successfully
+        "
+}
+
+if [ -z "$*" ]; then usage ; exit 1 ; fi
+
+declare -a stepsToRun
+stepsToRun=(step1 step2 step3 step4)
+startFromStep=""
+stopAtStep=""
+runOnlyStep=""
+
+runStep1=0
+runStep2=0
+runStep3=0
+runStep4=0
+
+for step in ${stepsToRun[@]} ; do
+  if [[ $step == "step1" ]] ; then runStep1=1 ; fi
+  if [[ $step == "step2" ]] ; then runStep2=1 ; fi
+  if [[ $step == "step3" ]] ; then runStep3=1 ; fi
+  if [[ $step == "step4" ]] ; then runStep4=1 ; fi
+done
+
 # Check if the user specified that this is a High Performance Computing environment
-system_type=${2:-}
-if [[ "$system_type" == "hpc" ]]; then
-	# If HPC, the job will not be invoked from the same directory the script is in.
-	# HPC environments should have an environmental variable that knows where the
-	# original script is though.
-	root="$PBS_O_WORKDIR"
-	# Presumably only HPC environments will need modules loaded
-	. /etc/profile.d/modules.sh >/dev/null 2>&1
-	module load samtools java tabix bcftools vcftools/0.1.13 python raxml >/dev/null 2>&1
-else
-	# In non-HPC environments we can just check where the script is.
-	#root="$(dirname "$(readlink -f "$0")")"
-	root="$(pwd)"
-fi
+while getopts "f:r:c:n:s:t:o:h" opt; do
+        case $opt in
+                f)
+                        cultivar=${OPTARG}
+                        echo "Processing ${cultivar}"
+                        ;;
+                r)
+                        if [[ $OPTARG == hpc ]]; then
+                                root="$PBS_O_WORKDIR"
+                                echo "root=$root"
+                                cd $root
+                                source $root/bin/environment.sh
+                                echo "Loading modules"
+                                . /etc/profile.d/modules.sh >/dev/null 2>&1
+                                module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
+                        elif [[ $OPTARG == pwd ]]; then
+                                root="$(pwd)"
+                                echo "root=$root"
+                                cd $root
+                                source $root/bin/environment.sh
+                        else
+                                echo "Need to specify path: pwd or hpc"
+                        fi
+                        ;;
+                c)
+                        nct=${OPTARG} ;;
+                n)
+                        nt=${OPTARG} ;;
+                s)
+                        startFromStep=${OPTARG} ;;
+                t)
+                        stopAtStep=${OPTARG} ;;
+                o)
+                        runOnlyStep=${OPTARG} ;;
+                h)
+                        usage; exit 1 ;;
+        esac
+done
 
 cd $root
 source $root/bin/environment.sh
-check_prereq
 
 # Once all of the cultivars are cleaned and split, the chromosomes can be merged by vcf-merge.
 # "bcftools merge" is supposed to be faster, but seems to have a problem with something in the format of these files.
-# The merge function includes filters to remove any sites that don't have at least one alternate allele and one match to the reference, as well as any "Multiple Nucleotide Polymorphism" sites.
-echo "Merging chromosomes"
-cd $split
-for chromosome in {chr01,chr02,chr03,chr04,chr05,chr06,chr07,chr08,chr09,chr10,chr11,chr12}; do
-	merge_chromosome $chromosome &
-done
+# The merge function includes filters to remove any sites that don't have at least one alternate allele and one match to the reference, 
+# as well as any "Multiple Nucleotide Polymorphism" sites.
 
+# Step 1
+if [[ runStep1 == 1 ]]; then
+        echo ""
+        echo "=============================================================================="
+        echo "Step 1 Merging chromosomes ..."
+        echo "=============================================================================="
+        echo ""
+
+	cd $split
+	for chromosome in {chr01,chr02,chr03,chr04,chr05,chr06,chr07,chr08,chr09,chr10,chr11,chr12}; do
+		merge_chromosome $chromosome &
+	done
+fi
 wait
 
-# After the chromosomes have been individually merged and cleaned, they can be reassembled into one VCF file containing all the sites that were called in all the input cultivars and contain at least one SNP.
-cd $merges
-vcf-concat chr*.cleaned.vcf.gz > ${filename%.*}.merge.cleaned.vcf
+# Step 2
+if [[ runStep2 == 1 ]]; then
+        echo ""
+        echo "=============================================================================="
+        echo "Step 2 Assemble a VCF file containing all called SNPs ..."
+        echo "=============================================================================="
+        echo ""
 
-# To look at SNPs that are present to a greater degree in the genome, a refiltering step produces additional vcf files that contain sites that have varying minimum numbers of SNPs.
-#refilter_merged ${filename%.*}.merge.cleaned.vcf
+	# After the chromosomes have been individually merged and cleaned, they can be reassembled into one VCF file containing 
+	# all the sites that were called in all the input cultivars and contain at least one SNP.
+	cd $merges
+	vcf-concat chr*.cleaned.vcf.gz > ${filename%.*}.merge.cleaned.vcf
+	
+	# In order to make trees, random sites from the VCF are selected and turned into a FASTA alignment.
+	# First the random sites are turned into a smaller VCF
+	randomsubsetvcf ${filename%.*}.merge.cleaned.vcf 100000 > ../alignments/${filename%.*}.100000SNPs.vcf
+fi
 
-# In order to make trees, random sites from the VCF are selected and turned into a FASTA alignment.
-# First the random sites are turned into a smaller VCF
-randomsubsetvcf ${filename%.*}.merge.cleaned.vcf 100000 > ../alignments/${filename%.*}.100000SNPs.vcf
-cd $alignments
-# Then the VCF is turned into a fasta file with a python script.
-python ../bin/snp2seq.py ${filename%.*}.100000SNPs.vcf
+# Step 3
+if [[ runStep3 == 1 ]]; then
+        echo ""
+        echo "=============================================================================="
+        echo "Step 3 Generating FASTA file for alignment ..."
+        echo "=============================================================================="
+        echo ""
 
-echo "Generating alignment"
-fasta="${alignments}/${filename%.*}.100000SNPs.vcf.fasta"
-rm -f RAxML_${filename%.*}.ERROR
-rm -f RAxML_${filename%.*}.log
-rm -f RAxML*${filename%.*}*
+	cd $alignments
+	# Then the VCF is turned into a fasta file with a python script.
+	python ../bin/snp2seq.py ${filename%.*}.100000SNPs.vcf
+fi
 
-## Model ASC_GTRGAMMA must be used to correct for the fact that we're only using SNPs
+# Step 4
+if [[ runStep4 == 1 ]]; then
+        echo ""
+        echo "=============================================================================="
+        echo "Step 4 Generating alignment ..."
+        echo "=============================================================================="
+        echo ""
 
-# -f d means rapid hill-climbing algorithm
-#raxmlHPC -f d -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -p 12345 -s ${fasta} 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
+	fasta="${alignments}/${filename%.*}.100000SNPs.vcf.fasta"
+	rm -f RAxML_${filename%.*}.ERROR
+	rm -f RAxML_${filename%.*}.log
+	rm -f RAxML*${filename%.*}*
 
-# Version for Karst/Carbonate. PTHREADS version w/ 12 threads. This REQUIRES at least 12 processors.
-raxmlHPC-PTHREADS -T 12 --no-bfgs -f a -m ASC_GTRGAMMA -n ${filename%.*} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${filename%.*}.log || raxmlHPC-PTHREADS --asc-corr=lewis -T 12 --no-bfgs -f a -m ASC_GTRGAMMA -n ${filename%.*} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${filename%.*}.log || touch RAxML_${filename%.*}.ERROR
+	## Model ASC_GTRGAMMA must be used to correct for the fact that we're only using SNPs
+
+	# -f d means rapid hill-climbing algorithm
+	#raxmlHPC -f d -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -p 12345 -s ${fasta} 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
+
+	# Version for Karst/Carbonate. PTHREADS version w/ 12 threads. This REQUIRES at least 12 processors.
+	raxmlHPC-PTHREADS -T 12 --no-bfgs -f a -m ASC_GTRGAMMA -n ${filename%.*} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${filename%.*}.log || raxmlHPC-PTHREADS --asc-corr=lewis -T 12 --no-bfgs -f a -m ASC_GTRGAMMA -n ${filename%.*} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${filename%.*}.log || touch RAxML_${filename%.*}.ERROR
+fi
 
 # -f a means bootstrap analysis and bestTree in one run.
 #raxmlHPC -f a -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -N 100 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
