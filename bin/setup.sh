@@ -3,7 +3,6 @@
 set -euo pipefail
 
 # Create work environment
-#root="$(dirname "$(readlink -f "$0")")"
 root="$(pwd)"
 cd $root
 source $root/bin/environment.sh
@@ -42,5 +41,5 @@ echo "Removing Picard because it is no longer needed"
 rm ${src}/picard.jar
 
 cd $root
-echo
+echo ""
 echo "Installation Complete"

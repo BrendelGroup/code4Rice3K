@@ -30,21 +30,16 @@ for module in vcf Bio; do
 		pip install pyvcf
 	fi
 done
-echo ""
-echo "=========================================================="
-echo "Downloading the code4Rice3K workflow"
-echo "=========================================================="
-echo ""
-git clone https://github.com/BrendelGroup/Code4Rice3K
-cd Code4Rice3K
-mkdir prereq 
-cd prereq
 
 echo ""
 echo "=========================================================="
 echo "Installing dependencies: "
 echo "=========================================================="
 echo ""
+
+mkdir prereq
+cd prereq
+
 echo "=========================================================="
 echo "Installing Java"
 echo "=========================================================="

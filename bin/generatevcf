@@ -1,29 +1,32 @@
 #!/bin/bash
-set -euo pipefail
+
 ## This script takes as its input argument the accession of a cultivar from the
 ## 3K Rice Genome project and produces a VCF file containing all of the called
 ## sites from that cultivar. It also produces VCF files for each chromosome of
 ## the cultivar, with indels, Multiple Nucleotide Polymorphisms, and uncalled or
 ## heterozygous sites removed.
 
+shopt -s extglob
+
+# help menu
 function usage() {
 	echo "
 		Code4Rice3K Help Section:
 		=========================
 
-		Usage: $0 -f <cultivar> -r <path> -c <cpu_threads> -n <data_threads> -s <start_from_step> -t <stop_at_step> -o <run_only_step>
-		Example: $0 -f sample-1 -r pwd -c 12 -n 12
+		Usage: $0 -i <cultivar> -p <path> -c <cpu_threads> -n <data_threads> -s <start_from_step> -t <stop_at_step> -o <run_only_step>
+		Example: $0 -i sample-1 -p pwd -c 12 -n 24 -s step1 -t step3
 		
 		Mandatory options:
-		-f <cultivar>		:	[string] the name of the chosen rice cultivar
-		-r <path>		:	[string] either "pwd" if run locally, or "hpc" if run on HPC computer
-		-c <cpu_threads>	:	[int] the number of CPU threads used by GATK (4-12 is recommended)
-		-n <data_threads>	:	[int] the number of data threads used by GATK (6-24 is recommended)
+		-i <cultivar>		:	[string] the name of the chosen rice cultivar
+		-p <path>		:	[string] either "pwd" if run locally, or "hpc" if run on HPC computer
+		-nct <cpu_threads>	:	[int] the number of CPU threads used by GATK (4-12 is recommended)
+		-nt <data_threads>	:	[int] the number of data threads used by GATK (6-24 is recommended)
 
 		* Optional setings:
-		-s <start_from_step>	:	[int] the number of the starting step, must be between 1-4 (see below) 
-		-t <stop_at_step>	:	[int] the number of the last step, must be between 1-4 (see below)
-		-o <run_only_step>	:	[int] the number of the step to run (see below)
+		-s <start_from_step>	:	[string] indicate the starting step, must be between step1-step4 (see below) 
+		-t <stop_at_step>	:	[string] indicate the last step, must be between step1-step4 (see below)
+		-o <run_only_step>	:	[string] indicate a single step to run, e.g. step1 or step3 (see below)
 
 		-h			:	disply this help message
 
@@ -39,91 +42,129 @@ function usage() {
 
 if [ -z "$*" ]; then usage ; exit 1 ; fi
 
-declare -a stepsToRun
-stepsToRun=(step1 step2 step3 step4)
-startFromStep=""
-stopAtStep=""
-runOnlyStep=""
+# set variable stepsToRun as an array 
+declare -a steps2run
+steps2run=(step1 step2 step3 step4)
+startfromstep=""
+stopatstep=""
+runonlystep=""
 
-runStep1=0
-runStep2=0
-runStep3=0
-runStep4=0
+# Default option settings:
+outputdir="$pwd"
+connfigfile=""
 
-for step in ${stepsToRun[@]} ; do
-  if [[ $step == "step1" ]] ; then runStep1=1 ; fi
-  if [[ $step == "step2" ]] ; then runStep2=1 ; fi
-  if [[ $step == "step3" ]] ; then runStep3=1 ; fi
-  if [[ $step == "step4" ]] ; then runStep4=1 ; fi
-done
 
-# Check if the user specified that this is a High Performance Computing environment
-while getopts "f:r:c:n:s:t:o:h" opt; do
-	case $opt in
-		f)
-			cultivar=${OPTARG}
-			echo "Processing ${cultivar}"
-			;;
-		r)
-			if [[ $OPTARG == hpc ]]; then
-				root="$PBS_O_WORKDIR"
-				echo "root=$root"
-				cd $root
-				source $root/bin/environment.sh
-				echo "Loading modules"
-				. /etc/profile.d/modules.sh >/dev/null 2>&1
-				module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
-			elif [[ $OPTARG == pwd ]]; then
-				root="$(pwd)"
-				echo "root=$root"
-				cd $root
-				source $root/bin/environment.sh
-			else
-				echo "Need to specify path: pwd or hpc"
-			fi
-			;;
-		c)
-			nct=${OPTARG} ;;
-		n)
-			nt=${OPTARG} ;;
-		s)
-			startFromStep=${OPTARG} ;;
-		t)
-			stopAtStep=${OPTARG} ;;
-		o)
-			runOnlyStep=${OPTARG} ;;
-		/?|*|h)
+OPTIONS=`getopt -o i:o:p:h --long infile:,outputdir:,path:,numproc:,numdata:,startfromstep:,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"` 
+if [ $? != 0 ] ; then echo " " ; echo "Could not parse options (see above) ..." >&2 ; usage ; exit 1 ; fi
+
+eval set -- "$OPTIONS"
+
+while true ; do
+	case "$1" in
+		-i|--infile)
+			case "$2" in
+				-*) echo "Please provide a valid cultivar name when using -i"; usage; exit 1 ;;
+				*) cultivar=$2 ; shift 2 ;;
+				echo "Processing ${cultivar} ..."
+			esac ;;
+
+		-o|--outputdir)
+			case "$2" in
+				-*) echo "Please designate an output directory when using -o"; usage; exit 1 ;;
+				*) outputdir=$2 ; shift 2 ;;
+		-p|--path)
+			case "$2" in
+				-*) echo "Please provide a valid path option to -p"; usage; exit 1 ;;
+				*) if [[ $2 == hpc ]]; then
+					root="$PBS_O_WORKDIR"
+					echo "root=$root"
+					cd $root
+					source $root/bin/environment.sh
+					echo "Loading modules"
+					. /etc/profile.d/modules.sh >/dev/null 2>&1
+					module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
+				elif [[ $OPTARG == pwd ]]; then
+					root="$(pwd)"
+					echo "root=$root"
+					cd $root
+					source $root/bin/environment.sh
+				else
+					echo "Please provide a valid path option when using -p"; usage; exit 1
+				fi
+				;;
+			esac ;;
+
+		--nct)
+			case "$2" in
+				-*) echo "Please provide a valid integer for number of cpu threads when using -nct"; usage; exit 1 ;;
+				*) nct=$2 ; shift 2 ;;
+
+		--nt)
+			case $2 in
+				-*) echo "Please provide a valid integer for number of data threads when using -nt"; usage; exit 1 ;;
+				*) nt=$2 ; shift 2 ;;
+			esac ;;
+
+		--startfromstep)
+			case "$2" in
+				-*) echo "Please designate the code4Rice3K step from which to start"; usage; exit 1 ;;
+				*) startfromstep=$2 ; shift 2 ;;
+			esac ;;
+
+		--stopatstep)
+			case "$2" in
+				-*) echo "Please designate the last codeRice3K step to execute"; usage; exit 1 ;;
+				*) stopatstep=$2 ; shift 2 ;;
+			esac ;;
+
+		--runonlystep)
+			case "$2" in
+				-*) echo "Please designate the code4Rice3K step to execute"; usage; exit 1 ;;
+				*) runonlystep=$2 ; shift 2 ;;
+
+		-h|--help)
 			usage; exit 1 ;;
+
+		--) shift ; break ;;
+
+		*) echo "Unknown option or error" ; usage; exit 1 ;;
 	esac
 done
 
-if [[ $startFromStep != "" ]] ; then
+if [[ $startfromstep != '' ]] ; then
 	i=-1
-		for step in ${stepsToRun[@]} ; do
-			((++i))
-			if [[ $step != $startFromStep ]] ; then unset stepsToRun[$i] ; else break ; fi
-		done
-fi
-
-unsetflag=0
-if [[ $stopAtStep != "" ]] ; then
-	for step in ${stepsToRun[@]} ; do
+	for step in ${steps2run[@]} ; do
 		((++i))
-		if [[ $step == $stopAtStep ]] ; then unsetflag=1 ; ((--i))
-		else  if [[ $unsetflag == 1 ]] ; then unset stepsToRun[$i] ; fi ;  fi
+		if [[ $step != $startfromstep ]] ; then unset steps2run[$i] ; else break ; fi
 	done
 fi
 
-if [[ $runOnlyStep != "" ]] ; then
-	stepsToRun=($runOnlyStep)
+unsetflag=0
+if [[ $stopatstep != '' ]] ; then
+	for step in ${steps2run[@]} ; do
+		((++i))
+		if [[ $step == $stopatstep ]] ; then unsetflag=1 ; ((--i))
+		else  if [[ $unsetflag == 1 ]] ; then unset steps2run[$i] ; fi ; fi
+	done
 fi
 
+if [[ $runonlystep != '' ]] ; then
+	stepsToRun=($runonlystep)
+fi 
 
-cd $root
-source $root/bin/environment.sh 
+runstep1=0
+runstep2=0
+runstep3=0
+runstep4=0
+for step in ${steps2run[@]} ; do
+	if [[ $step == "step1" ]] ; then runstep1=1 ; fi
+	if [[ $step == "step2" ]] ; then runstep2=1 ; fi
+	if [[ $step == "step3" ]] ; then runstep3=1 ; fi
+	if [[ $step == "step4" ]] ; then runstep4=1 ; fi
+done
 
 #Step 1
-if [[ runStep1 == 1 ]]; then
+if [ $runstep1 == 1 ] ; then
 	# BAM files of sequence read mapping
 	# https://aws.amazon.com/public-datasets/3000-rice-genome/
 	echo ""
@@ -132,7 +173,7 @@ if [[ runStep1 == 1 ]]; then
 	echo "=============================================================================="
 	echo ""
 
-	cd $maps
+	cd $bamfiles
 	if [[ ! -e ${cultivar}.realigned.bam.bai ]]; then
         	wget https://s3.amazonaws.com/3kricegenome/Nipponbare/${cultivar}.realigned.bam
         	samtools index ${cultivar}.realigned.bam
@@ -141,7 +182,7 @@ if [[ runStep1 == 1 ]]; then
 fi
 
 # Step 2
-if [[ runStep2 == 1 ]]; then
+if [ $runstep2 == 1 ] ; then
 	echo ""
 	echo "=============================================================================="
 	echo "Step 2 Generating GVCF file from .bam ..."
@@ -149,14 +190,14 @@ if [[ runStep2 == 1 ]]; then
 	echo ""
 
 	# The GATK tool Haplotype Caller is used to compare the bam file with the reference genome and generate a gvcf file
-	cd $calls
+	cd $gvcffiles
 	call_variants $cultivar $nct
 	echo "GVCF file created"
 	echo ""
 fi
 
 # Step 3
-if [[ runStep3 == 1 ]]; then
+if [ $runstep3 == 1 ] ; then
 	echo ""
 	echo "=============================================================================="
 	echo "Step 3 Generating VCF file from .gvcf ..."
@@ -165,7 +206,7 @@ if [[ runStep3 == 1 ]]; then
 	# The GATK tool GenotypeGVCFs takes the gvcf file and produces a normal vcf.
 	# The option -allSites is necessary for our purposes, so that called sites that match the reference 
 	# will be able to be compared to SNPs in other cultivars.
-	cd $calls
+	cd $vcffiles
 	full_genotype $cultivar $nt
 
 	echo "VCF file created"
@@ -173,7 +214,7 @@ if [[ runStep3 == 1 ]]; then
 fi
 
 # Step 4
-if [[ runStep4 == 1 ]]; then
+if [ $runstep4 == 1 ] ; then
 	echo ""
 	echo "=============================================================================="
 	echo "Step 4 Splitting and cleaning VCF files ..."
@@ -182,7 +223,7 @@ if [[ runStep4 == 1 ]]; then
 	# Before merging VCFs from different cultivars, it is useful to remove indels and uncalled or heterozygous sites with bcftools view.
 	# It is also expedient to split the VCF by chromosome so that merges can be performed with some degree of parallelism.
 	# This step is not necessary if a merge is not planned.
-	cd $calls
+	cd $vcffiles
 	clean_and_split_vcf $cultivar
 
 	echo "Splitting and cleaning is done"

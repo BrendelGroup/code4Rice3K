@@ -4,8 +4,7 @@
 
 root="$(pwd)"
 cd $root
-source $root/bin/environment.sh
+source $root/bin/code4Rice3K.conf
 
 check_prereq
 
- 

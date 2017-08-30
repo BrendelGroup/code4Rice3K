@@ -9,9 +9,9 @@ function call_variants() {
 	nct=$2
 	$gatk -T HaplotypeCaller \
 		-R ${reference}/IRGSP-1.0_genome.fasta \
-		-I $maps/${cultivar}.realigned.bam \
+		-I $bamfiles/${cultivar}.realigned.bam \
 		-ERC GVCF \
-		-o $calls/${cultivar}.g.vcf \
+		-o $gvcffiles/${cultivar}.g.vcf \
 		-nct $2
 }
 
@@ -21,9 +21,9 @@ function full_genotype() {
 	nt=$2
 	$gatk -T GenotypeGVCFs \
 		-R ${reference}/IRGSP-1.0_genome.fasta \
-		-V $calls/${cultivar}.g.vcf \
+		-V $gvcffiles/${cultivar}.g.vcf \
 		-allSites \
-		-o $calls/${cultivar}.full.vcf \
+		-o $vcffiles/${cultivar}.full.vcf \
 		-nt $2
 }
 
@@ -38,7 +38,10 @@ function clean_and_split_vcf() {
 	bgzip ${cultivar}.full.vcf && tabix -f ${cultivar}.full.vcf.gz
 #TODO Make this more sensible about parallelizing. As is, it will be really inefficient on a machine with fewer than 12 processors
 	for chromosome in chr{01,02,03,04,05,06,07,08,09,10,11,12}; do (
-		bcftools view --exclude-uncalled --exclude-types 'indels' --genotype ^het -r ${chromosome} -O v ${cultivar}.full.vcf.gz | awk ' /^#/ {print} length($4) == 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) && ( ($5 !~ /^[ACGT],<NON_REF>/) || ($0 !~ /2\/2/) ) && ( ($5 !~ /^[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /3\/3/) ) && ( ($5 !~ /^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' | bgzip -c > ../split/${cultivar}.${chromosome}.noindels_nohets_nomnps.vcf.gz; tabix ../split/${cultivar}.${chromosome}.noindels_nohets_nomnps.vcf.gz) &
+		bcftools view --exclude-uncalled --exclude-types 'indels' --genotype ^het -r ${chromosome} -O v ${cultivar}.full.vcf.gz | awk ' /^#/ {print} length($4) == 1 && ( 
+($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) && ( ($5 !~ /^[ACGT],<NON_REF>/) || ($0 !~ /2\/2/) ) && ( ($5 !~ /^[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /3\/3/) ) && ( ($5 !~ 
+/^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' | bgzip -c > ../chromosomefiles/${cultivar}.${chromosome}.noindels_nohets_nomnps.vcf.gz; tabix 
+../chromosomefiles/${cultivar}.${chromosome}.noindels_nohets_nomnps.vcf.gz) &
 	done
 	wait
 }
@@ -46,20 +49,14 @@ function clean_and_split_vcf() {
 function merge_chromosome() {
 #TODO Add an argument that determines which cultivars are merged. Right now it's indiscriminate.
 	chromosome=$1
-	vcf-merge *${chromosome}*.vcf.gz > ../merges/${chromosome}.merge.vcf
+	vcf-merge *${chromosome}*.vcf.gz > ../mergedfiles/${chromosome}.merge.vcf
 	# The awk command filters any Multiple Nucleotide Polymorphisms, and any sites that for some reason  are called as '<NON_REF>'
-	< ../merges/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} length($4) == 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) && ( ($5 !~ /^[ACGT],<NON_REF>/) || ($0 !~ /2\/2/) ) && ( ($5 !~ /^[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /3\/3/) ) && ( ($5 !~ /^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' > ../merges/${chromosome}.merge.cleaned.vcf
-	bgzip ../merges/${chromosome}.merge.cleaned.vcf
-	tabix ../merges/${chromosome}.merge.cleaned.vcf.gz
-}
-
-function refilter_merged() {
-	file=$1
-	#< $file bcftools view --min-ac 2 -O v > ${file%.vcf}.min2.vcf
-	< $file bcftools view --min-ac 3 -O v > ${file%.vcf}.min3.vcf
-	< $file bcftools view --min-ac 4 -O v > ${file%.vcf}.min4.vcf
-	< $file bcftools view --min-ac 5 -O v > ${file%.vcf}.min5.vcf
-	< $file bcftools view --min-ac 8 -O v > ${file%.vcf}.min8.vcf
+	< ../mergedfiles/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} 
+length($4) 
+== 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) && ( ($5 !~ /^[ACGT],<NON_REF>/) || ($0 !~ /2\/2/) ) && ( ($5 !~ /^[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /3\/3/) ) && ( ($5 !~ 
+/^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' > ../mergedfiles/${chromosome}.merge.cleaned.vcf
+	bgzip ../mergedfiles/${chromosome}.merge.cleaned.vcf
+	tabix ../mergedfiles/${chromosome}.merge.cleaned.vcf.gz
 }
 
 function only_SNPs() {
