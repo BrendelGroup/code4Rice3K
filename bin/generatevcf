@@ -14,29 +14,30 @@ function usage() {
 		Code4Rice3K Help Section:
 		=========================
 
-		Usage: $0 -i <cultivar> -p <path> -c <cpu_threads> -n <data_threads> -s <start_from_step> -t <stop_at_step> -o <run_only_step>
-		Example: $0 -i sample-1 -p pwd -c 12 -n 24 -s step1 -t step3
+		Usage: $0 -i <cultivar> -o <path> -m <mode> --nct <cpu_threads> --nt <data_threads>
+		Example: $0 -i sample-1 -o /usr/home/ -m local --nct 4 --nt 12
 		
-		Mandatory options:
-		-i <cultivar>		:	[string] the name of the chosen rice cultivar
-		-p <path>		:	[string] either "pwd" if run locally, or "hpc" if run on HPC computer
-		-nct <cpu_threads>	:	[int] the number of CPU threads used by GATK (4-12 is recommended)
-		-nt <data_threads>	:	[int] the number of data threads used by GATK (6-24 is recommended)
+		1) Mandatory options:
+		-i|--infile <string>		:	The name of the chosen rice cultivar
+		-m|--mode <string>		:	Either "local" if run locally, or "hpc" if run on HPC computer
 
-		* Optional setings:
-		-s <start_from_step>	:	[string] indicate the starting step, must be between step1-step4 (see below) 
-		-t <stop_at_step>	:	[string] indicate the last step, must be between step1-step4 (see below)
-		-o <run_only_step>	:	[string] indicate a single step to run, e.g. step1 or step3 (see below)
+		2) Optional setings:
+		-o|--outputdir <string>		:	Directory path for all output files
+		--nct <int>			:	The number of CPU threads used by GATK (4-12 is recommended)
+		--nt <int>			:	The number of data threads used by GATK (6-24 is recommended)
+		--startfromstep <string>	:	Indicate the starting step, must be between step1-step4 (see below) 
+		--stopatstep <string>		:	Indicate the last step, must be between step1-step4 (see below)
+		--runonlystep <string>		:	Indicate a single step to run, e.g. step1 or step3 (see below)
 
-		-h			:	disply this help message
+		-h|--help			:	Disply this help message
 
 		code4Rice3K workflow can be run entirely or only part of the workflow can run.
 		Below are the possible steps that can chosen for the "generatevcf" script:
 
-		step 1 downloading the .bam file
-		step 2 generating .gvcf file .bam, ATTN: To skip to this step, previous steps must have run successfully
-		step 3 generating .vcf file from .gvcf, ATTN: To skip to this step, previous steps must have run successfully
-		step 4 generate .vcf file for each chromosome, ATTN: To skip to this step, previous steps must have run successfully
+		step 1 downloads the .bam file
+		step 2 generates .gvcf file .bam, ATTN: To skip to this step, previous steps must have run successfully
+		step 3 generates .vcf file from .gvcf, ATTN: To skip to this step, previous steps must have run successfully
+		step 4 generates .vcf file for each chromosome, ATTN: To skip to this step, previous steps must have run successfully
 	"
 }
 
@@ -51,10 +52,10 @@ runonlystep=""
 
 # Default option settings:
 outputdir="$pwd"
-connfigfile=""
+#configfile=""
 
 
-OPTIONS=`getopt -o i:o:p:h --long infile:,outputdir:,path:,numproc:,numdata:,startfromstep:,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"` 
+OPTIONS=`getopt -o i:o:m:h --long infile:,outputdir:,mode:,numproc:,numdata:,startfromstep:,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"` 
 if [ $? != 0 ] ; then echo " " ; echo "Could not parse options (see above) ..." >&2 ; usage ; exit 1 ; fi
 
 eval set -- "$OPTIONS"
@@ -72,32 +73,30 @@ while true ; do
 			case "$2" in
 				-*) echo "Please designate an output directory when using -o"; usage; exit 1 ;;
 				*) outputdir=$2 ; shift 2 ;;
-		-p|--path)
+			esac ;;
+
+		-m|--mode)
 			case "$2" in
-				-*) echo "Please provide a valid path option to -p"; usage; exit 1 ;;
+				-*) echo "Please provide a valid mode option to -m"; usage; exit 1 ;;
 				*) if [[ $2 == hpc ]]; then
 					root="$PBS_O_WORKDIR"
 					echo "root=$root"
-					cd $root
-					source $root/bin/environment.sh
 					echo "Loading modules"
 					. /etc/profile.d/modules.sh >/dev/null 2>&1
 					module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
-				elif [[ $OPTARG == pwd ]]; then
+				elif [[ $2 == local ]]; then
 					root="$(pwd)"
 					echo "root=$root"
-					cd $root
-					source $root/bin/environment.sh
 				else
-					echo "Please provide a valid path option when using -p"; usage; exit 1
-				fi
-				;;
+					echo "Please provide a valid mode option when using -m"; usage; exit 1
+				fi ; shift 2 ;;
 			esac ;;
 
 		--nct)
 			case "$2" in
 				-*) echo "Please provide a valid integer for number of cpu threads when using -nct"; usage; exit 1 ;;
 				*) nct=$2 ; shift 2 ;;
+			esac ;;
 
 		--nt)
 			case $2 in
@@ -121,6 +120,7 @@ while true ; do
 			case "$2" in
 				-*) echo "Please designate the code4Rice3K step to execute"; usage; exit 1 ;;
 				*) runonlystep=$2 ; shift 2 ;;
+			esac ;;
 
 		-h|--help)
 			usage; exit 1 ;;
@@ -162,6 +162,9 @@ for step in ${steps2run[@]} ; do
 	if [[ $step == "step3" ]] ; then runstep3=1 ; fi
 	if [[ $step == "step4" ]] ; then runstep4=1 ; fi
 done
+
+cd $root
+source $root/bin/code4Rice3K.conf
 
 #Step 1
 if [ $runstep1 == 1 ] ; then

@@ -5,7 +5,7 @@ set -euo pipefail
 # Create work environment
 root="$(pwd)"
 cd $root
-source $root/bin/environment.sh
+source $root/bin/code4Rice3K.conf
 # Check if the user specified that this is a High Performance Computing environment
 system_type=${1:-}
 if [[ "$system_type" == "hpc" ]]; then
@@ -43,3 +43,5 @@ rm ${src}/picard.jar
 cd $root
 echo ""
 echo "Installation Complete"
+echo ""
+exit
