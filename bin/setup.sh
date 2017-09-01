@@ -4,6 +4,7 @@ set -euo pipefail
 
 # Create work environment
 root="$(pwd)"
+outputdir="$(pwd)"
 cd $root
 source $root/bin/code4Rice3K.conf
 # Check if the user specified that this is a High Performance Computing environment

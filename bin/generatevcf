@@ -23,8 +23,8 @@ function usage() {
 
 		2) Optional setings:
 		-o|--outputdir <string>		:	Directory path for all output files
-		--nct <int>			:	The number of CPU threads used by GATK (4-12 is recommended)
-		--nt <int>			:	The number of data threads used by GATK (6-24 is recommended)
+		--numproc <int>			:	The number of CPU threads used by GATK (4-12 is recommended)
+		--numdata <int>			:	The number of data threads used by GATK (6-24 is recommended)
 		--startfromstep <string>	:	Indicate the starting step, must be between step1-step4 (see below) 
 		--stopatstep <string>		:	Indicate the last step, must be between step1-step4 (see below)
 		--runonlystep <string>		:	Indicate a single step to run, e.g. step1 or step3 (see below)
@@ -66,7 +66,6 @@ while true ; do
 			case "$2" in
 				-*) echo "Please provide a valid cultivar name when using -i"; usage; exit 1 ;;
 				*) cultivar=$2 ; shift 2 ;;
-				echo "Processing ${cultivar} ..."
 			esac ;;
 
 		-o|--outputdir)
@@ -92,13 +91,13 @@ while true ; do
 				fi ; shift 2 ;;
 			esac ;;
 
-		--nct)
+		--numproc)
 			case "$2" in
 				-*) echo "Please provide a valid integer for number of cpu threads when using -nct"; usage; exit 1 ;;
 				*) nct=$2 ; shift 2 ;;
 			esac ;;
 
-		--nt)
+		--numdata)
 			case $2 in
 				-*) echo "Please provide a valid integer for number of data threads when using -nt"; usage; exit 1 ;;
 				*) nt=$2 ; shift 2 ;;
@@ -149,7 +148,7 @@ if [[ $stopatstep != '' ]] ; then
 fi
 
 if [[ $runonlystep != '' ]] ; then
-	stepsToRun=($runonlystep)
+	steps2run=($runonlystep)
 fi 
 
 runstep1=0
@@ -211,7 +210,6 @@ if [ $runstep3 == 1 ] ; then
 	# will be able to be compared to SNPs in other cultivars.
 	cd $vcffiles
 	full_genotype $cultivar $nt
-
 	echo "VCF file created"
 	echo ""
 fi
@@ -228,7 +226,6 @@ if [ $runstep4 == 1 ] ; then
 	# This step is not necessary if a merge is not planned.
 	cd $vcffiles
 	clean_and_split_vcf $cultivar
-
 	echo "Splitting and cleaning is done"
 	echo ""
 fi
