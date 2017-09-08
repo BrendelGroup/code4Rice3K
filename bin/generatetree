@@ -15,17 +15,18 @@ function usage() {
                 Code4Rice3K Help Section:
                 =========================
 
-                Usage: $0 -l <listofcultivars> -o <path> -m <mode> --numproc <cpu_threads> --numdata <data_threads>
-                Example: $0 -l mylist -o ~/Downloads/ -m local --numproc 12 --numdata 12
+                Usage: $0 -c <configfile> -i <listofcultivars> -o <path> -m <mode> --numproc <cpu_threads> --numdata <data_threads>
+                Example: $0 -c ~/code4Rice3K.conf -i mylist.txt -o ~/Downloads/ -m local --numproc 12 --numdata 12
                 
                 1) Mandatory options:
-                -l|--list <textfile>	       	 :       List containing the names of all cultivars to be inferred
+		-c|--configfile <path>		 :	 Configuration file for the code4Rice3K workflow
+                -i|--inputlist <textfile>	 :       List containing the names of all cultivars to be inferred
                 -m|--mode <string>               :       Either "local" if run locally, or "hpc" if run on HPC computer
 
                 2) Optional setings:
-		-o|--outputdir <string>	         :	 Directory path for all output files
-		--nct <int>       		 :       The number of CPU threads used by GATK (4-12 is recommended)
-                --nt <int>      		 :       The number of data threads used by GATK (6-24 is recommended)
+		-o|--outputdir <string>	         :	 Directory path for the output files
+		--numproc <int>       		 :       The number of CPU threads used by GATK (4-12 is recommended)
+                --numdata <int>      		 :       The number of data threads used by GATK (6-24 is recommended)
                 --startfromstep <string>   	 :       Indicate the starting step, must be between step1-step4 (see below) 
                 --stopatstep <string>      	 :       Indicate the last step, must be between step1-step4 (see below)
                 --runonlystep <string>     	 :       Indicate a single step to run, e.g. step1 or step3 (see below)
@@ -44,33 +45,55 @@ function usage() {
 
 if [ -z "$*" ]; then usage ; exit 1 ; fi
 
+# Set default main and bin directories:
+scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
+
+bin=${maindir}/bin
+
+# Set variable steps2run as an array
 declare -a steps2run
-stepstorun=(step1 step2 step3 step4)
+steps2run=(step1 step2 step3 step4)
 startfromstep=""
 stopatstep=""
 runonlystep=""
 
 # Default option settings:
-outputdir="$pwd"
-configfile=""
+outputdir=$maindir
+configfile=$scriptdir/code4Rice3K.conf
 
-OPTIONS=`getopt -o l:o:m:h --long list:,outputdir:,mode:,numproc:,numdata:,startfromstep,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"`
+function readconfigfile {
+if [ ! -e "$1" ] ; then
+        echo ""
+        echo "Fatal error: code4Rice3K config file $1 does not exist. Please check"
+        exit 1
+fi
+raxmlOptions1=`grep '^raxmlOptions1=' "$1" | awk -F"=" '{print $2}'`
+raxmlOptions2=`grep '^raxmlOptions2=' "$1" | awk -F"=" '{print $2}'`
+}
+
+# Parsing command line arguments:
+OPTIONS=`getopt -o c:i:o:m:h --long configfile:,inputlist:,outputdir:,mode:,numproc:,numdata:,startfromstep,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"`
 if [ $? !+ 0 ] ; then echo " " ; echo "Could not parse options (see above) ..." >&2 ; usage ; exit 1 ; fi
 
 eval set -- "$OPTIONS"
 
 while true ; do
         case "$1" in
-                -l|--list)
+		-c|--configfile)
 			case "$2" in
-				-*) echo "Please provide a valid list with cultivar names when using -l"; usage; exit 1 ;;
+				-*) echo "Please load code4Rice3K configuation file"; usage; exit ;;
+				*) configfile=$2; shift 2 ;;
+                -i|--inputlist)
+			case "$2" in
+				-*) echo "Please provide a valid list with cultivar names when using -i"; usage; exit 1 ;;
 				*) inputfile=$2 ; filename=${inputfile##*/} ; cultivarlist=$(cat $inputfile) ; shift 2 ;;
 			esac ;;
 
 		-o|--outputdir)
 			case "$2" in
 				-*) echo "Please designate an output path option when using -o"; usage; exit 1 ;;
-				*) outputdir=$2 ; shift ;;
+				*) outputdir=$2 ; shift 2 ;;
 			esac ;;
 
                 -m|--mode)
@@ -83,22 +106,20 @@ while true ; do
                                 	. /etc/profile.d/modules.sh >/dev/null 2>&1
                                 	module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
                         	elif [[ $2 == local ]]; then
-                                	root="$(pwd)"
+                                	root="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
                                 	echo "root=$root"
-                                	cd $root
-                                	source $root/bin/environment.sh
                         	else
                                 	echo "Please provide a valid mode option to -m"; usage; exit 1
                         	fi ;;
 			esac ;;
 
-                --nct)
+                --numproc)
 			case "$2" in
 				-*) echo "Please provide a valid integer for the number of cpu threads when using --nct"; usage; exit 1 ;;
                         	*) nct=$2 ; shift 2 ;;
 			esac ;;
 
-                --nt)
+                --numdata)
 			case "$2" in 
 				-*) echo " please provide a valid integer for the number of data threads when using --nt"; usage; exit 1 ;;
                         	*) nt=$2 ; shift 2 ;;
@@ -131,6 +152,33 @@ while true ; do
         esac
 done
 
+# Step 0
+echo ""
+echo "=============================================================================="
+echo " Setting up workflow ..."
+echo "=============================================================================="
+echo ""
+
+data=${outputdir}/data
+vcffiles=${data}/vcffiles
+splitchromosomefiles=${data}/splitchromosomefiles
+mergedchromosomefiles=${data}/mergedchromosomefiles
+alignmentfiles=${data}/alignmentfiles
+
+mkdir -p ${outputdir}/data
+cd $data
+mkdir -p $vcffiles $splitchromosomefiles $mergedchromosomefiles $alignmentfiles
+cd $maindir
+
+if [ ! -d "$outputdir" ] ; then
+        echo ""
+        echo "Fatal error: Output directory $outputdir does not exist. Please check"
+        exit 1 
+fi
+
+readconfigfile $configfile
+
+# Control which step to run:
 runstep1=0
 runstep2=0
 runstep3=0
@@ -164,8 +212,7 @@ for step in ${steps2run[@]} ; do
   if [[ $step == "step4" ]] ; then runstep4=1 ; fi
 done
 
-cd $root
-source $root/bin/code4Rice3K.conf
+cd $maindir
 
 # Once all of the cultivars are cleaned and split, the chromosomes can be merged by vcf-merge.
 # "bcftools merge" is supposed to be faster, but seems to have a problem with something in the format of these files.
@@ -180,10 +227,12 @@ if [[ runstep1 == 1 ]]; then
         echo "=============================================================================="
         echo ""
 
-	cd $chromosomefiles
+	cd $splitchromosomefiles
 	for chromosome in {chr01,chr02,chr03,chr04,chr05,chr06,chr07,chr08,chr09,chr10,chr11,chr12}; do
 		merge_chromosome $chromosome &
 	done
+	echo "Finished merging chromosome"
+	echo "" 
 fi
 wait
 
@@ -197,12 +246,14 @@ if [[ runstep2 == 1 ]]; then
 
 	# After the chromosomes have been individually merged and cleaned, they can be reassembled into one VCF file containing 
 	# all the sites that were called in all the input cultivars and contain at least one SNP.
-	cd $mergedfiles
+	cd $mergedchromosomefiles
 	vcf-concat chr*.cleaned.vcf.gz > ${filename%.*}.merge.cleaned.vcf
 	
 	# In order to make trees, random sites from the VCF are selected and turned into a FASTA alignment.
 	# First the random sites are turned into a smaller VCF
 	randomsubsetvcf ${filename%.*}.merge.cleaned.vcf 100000 > ../alignmentfiles/${filename%.*}.100000SNPs.vcf
+	echo "Merged file created"
+	echo ""
 fi
 
 # Step 3
@@ -215,7 +266,9 @@ if [[ runstep3 == 1 ]]; then
 
 	cd $alignmentfiles
 	# Then the VCF is turned into a fasta file with a python script.
-	python ../bin/snp2seq.py ${filename%.*}.100000SNPs.vcf
+	python ${scriptdir}/snp2seq.py ${filename%.*}.100000SNPs.vcf
+	echo "Fasta file created"
+	echo ""
 fi
 
 # Step 4
@@ -238,7 +291,9 @@ if [[ runstep4 == 1 ]]; then
 	#raxmlHPC -f d -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -p 12345 -s ${fasta} 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
 
 	# Version for Karst/Carbonate. PTHREADS version w/ 12 threads. This REQUIRES at least 12 processors.
-	raxmlHPC-PTHREADS -T 12 --no-bfgs -f a -m ASC_GTRGAMMA -n ${filename%.*} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${filename%.*}.log || raxmlHPC-PTHREADS --asc-corr=lewis -T 12 --no-bfgs -f a -m ASC_GTRGAMMA -n ${filename%.*} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${filename%.*}.log || touch RAxML_${filename%.*}.ERROR
+	raxmlHPC-PTHREADS ${raxmlOptions1} -n ${filename%.*} -p 12345 -s ${fasta} 2>&1 > RAxML_${filename%.*}.log || raxmlHPC-PTHREADS ${raxmlOptions2} -n ${filename%.*} -s ${fasta} 2>&1 > RAxML_${filename%.*}.log || touch RAxML_${filename%.*}.ERROR
+	echo "RAxML alignment file created"
+	echo ""
 fi
 
 # -f a means bootstrap analysis and bestTree in one run.
@@ -247,6 +302,10 @@ fi
 # This can go a lot faster with openmpi
 #mpirun -n 6 raxmlHPC-MPI-AVX -f a -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
 
-echo "Finished"
+echo ""
+echo "=============================================================================="
+echo " Finished generating files"
+echo "=============================================================================="
+echo ""
 
 exit
