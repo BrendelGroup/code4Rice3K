@@ -164,11 +164,6 @@ fi
 readconfigfile $configfile
 
 # Control which step to run:
-runstep1=0
-runstep2=0
-runstep3=0
-runstep4=0
-
 if [[ $startfromstep != '' ]] ; then
 	i=-1
 	for step in ${steps2run[@]} ; do
@@ -182,7 +177,7 @@ if [[ $stopatstep != '' ]] ; then
 	for step in ${steps2run[@]} ; do
 		((++i))
 		if [[ $step == $stopatstep ]] ; then unsetflag=1 ; ((--i))
-		else if [[ $unsetflag == 1 ]] ; then unset steps2run[$i] ; fi ; fi
+		else  if [[ $unsetflag == 1 ]] ; then unset steps2run[$i] ; fi ; fi
 	done
 fi
 
@@ -190,24 +185,28 @@ if [[ $runonlystep != '' ]] ; then
 	steps2run=($runonlystep)
 fi
 
+runstep1=0
+runstep2=0
+runstep3=0
+runstep4=0
 for step in ${steps2run[@]} ; do
-  if [[ $step == "step1" ]] ; then runstep1=1 ; fi
-  if [[ $step == "step2" ]] ; then runstep2=1 ; fi
-  if [[ $step == "step3" ]] ; then runstep3=1 ; fi
-  if [[ $step == "step4" ]] ; then runstep4=1 ; fi
+	if [[ $step == "step1" ]] ; then runstep1=1 ; fi
+	if [[ $step == "step2" ]] ; then runstep2=1 ; fi
+	if [[ $step == "step3" ]] ; then runstep3=1 ; fi
+	if [[ $step == "step4" ]] ; then runstep4=1 ; fi
 done
 
 function merge_chromosome() {
 #TODO Add an argument that determines which cultivars are merged. Right now it's indiscriminate.
         chromosome=$1
-        vcf-merge *${chromosome}*.vcf.gz > ../mergedfiles/${chromosome}.merge.vcf
+        vcf-merge *${chromosome}*.vcf.gz > ../mergedchromosomefiles/${chromosome}.merge.vcf
         # The awk command filters any Multiple Nucleotide Polymorphisms, and any sites that for some reason  are called as '<NON_REF>'
-        < ../mergedfiles/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} 
+        < ../mergedchromosomefiles/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} 
 length($4) 
 == 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) && ( ($5 !~ /^[ACGT],<NON_REF>/) || ($0 !~ /2\/2/) ) && ( ($5 !~ /^[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /3\/3/) ) && ( ($5 !~ 
-/^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' > ../mergedfiles/${chromosome}.merge.cleaned.vcf
-        bgzip ../mergedfiles/${chromosome}.merge.cleaned.vcf
-        tabix ../mergedfiles/${chromosome}.merge.cleaned.vcf.gz
+/^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' > ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
+        bgzip ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
+        tabix ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf.gz
 }
 
 function randomsubsetvcf() {
@@ -232,7 +231,7 @@ cd $maindir
 # as well as any "Multiple Nucleotide Polymorphism" sites.
 
 # Step 1
-if [[ runstep1 == 1 ]]; then
+if [[ $runstep1 == 1 ]]; then
         echo ""
         echo "=============================================================================="
         echo "Step 1 Merging chromosomes ..."
@@ -249,7 +248,7 @@ fi
 wait
 
 # Step 2
-if [[ runstep2 == 1 ]]; then
+if [[ $runstep2 == 1 ]]; then
         echo ""
         echo "=============================================================================="
         echo "Step 2 Assemble a VCF file containing all called SNPs ..."
@@ -269,7 +268,7 @@ if [[ runstep2 == 1 ]]; then
 fi
 
 # Step 3
-if [[ runstep3 == 1 ]]; then
+if [[ $runstep3 == 1 ]]; then
         echo ""
         echo "=============================================================================="
         echo "Step 3 Generating FASTA file for alignment ..."
@@ -278,7 +277,7 @@ if [[ runstep3 == 1 ]]; then
 
 	cd $alignmentfiles
 	# Then the VCF is turned into a fasta file with a python script.
-	python ${scriptdir}/snp2seq.py ${filename%.*}.100000SNPs.vcf
+	python ${bin}/snp2seq.py ${filename%.*}.100000SNPs.vcf
 	echo "Fasta file created"
 	echo ""
 fi
