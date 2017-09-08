@@ -15,15 +15,15 @@ function usage() {
                 Code4Rice3K Help Section:
                 =========================
 
-                Usage: $0 -c <configfile> -i <listofcultivars> -o <path> -m <mode> --numproc <cpu_threads> --numdata <data_threads>
-                Example: $0 -c ~/code4Rice3K.conf -i mylist.txt -o ~/Downloads/ -m local --numproc 12 --numdata 12
+                Usage: $0 -m <mode> -c <configfile> -i <listofcultivars> -o <path> -m --numproc <cpu_threads> --numdata <data_threads>
+                Example: $0 -m local -c ~/Home/MyFiles/myconfigfile.conf -i mylist.txt -o ~/Downloads/ --numproc 12 --numdata 12
                 
                 1) Mandatory options:
-		-c|--configfile <path>		 :	 Configuration file for the code4Rice3K workflow
-                -i|--inputlist <textfile>	 :       List containing the names of all cultivars to be inferred
                 -m|--mode <string>               :       Either "local" if run locally, or "hpc" if run on HPC computer
+                -i|--inputlist <textfile>	 :       List containing the names of all cultivars to be inferred
 
                 2) Optional setings:
+		-c|--configfile <path>		 :	 Configuration file for the code4Rice3K workflow
 		-o|--outputdir <string>	         :	 Directory path for the output files
 		--numproc <int>       		 :       The number of CPU threads used by GATK (4-12 is recommended)
                 --numdata <int>      		 :       The number of data threads used by GATK (6-24 is recommended)
@@ -46,10 +46,9 @@ function usage() {
 if [ -z "$*" ]; then usage ; exit 1 ; fi
 
 # Set default main and bin directories:
-scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
+#scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+#maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
 
-bin=${maindir}/bin
 
 # Set variable steps2run as an array
 declare -a steps2run
@@ -59,8 +58,8 @@ stopatstep=""
 runonlystep=""
 
 # Default option settings:
-outputdir=$maindir
-configfile=$scriptdir/code4Rice3K.conf
+#outputdir=$maindir
+#configfile=$scriptdir/code4Rice3K.conf
 
 function readconfigfile {
 if [ ! -e "$1" ] ; then
@@ -80,6 +79,27 @@ eval set -- "$OPTIONS"
 
 while true ; do
         case "$1" in
+                -m|--mode)
+			case "$2" in
+				-*) echo "Please provide a valid mode option to -m"; usage; exit 1 ;; 
+                        	*) if [[ $2 == hpc ]]; then
+                                	maindir="$PBS_O_WORKDIR"
+					outputdir=$maindir
+					configfile=$maindir/bin/code4Rice3K.conf
+                                	echo "maindir=$maindir"
+                                	echo "Loading modules"
+                                	. /etc/profile.d/modules.sh >/dev/null 2>&1
+                                	module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
+                        	elif [[ $2 == local ]]; then
+                                	maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
+					outputdir=$maindir
+					configfile=$maindir/bin/code4Rice3K.conf
+                                	echo "maindir=$maindir"
+                        	else
+                                	echo "Please provide a valid mode option to -m"; usage; exit 1
+                        	fi ;;
+			esac ;;
+
 		-c|--configfile)
 			case "$2" in
 				-*) echo "Please load code4Rice3K configuation file"; usage; exit ;;
@@ -94,23 +114,6 @@ while true ; do
 			case "$2" in
 				-*) echo "Please designate an output path option when using -o"; usage; exit 1 ;;
 				*) outputdir=$2 ; shift 2 ;;
-			esac ;;
-
-                -m|--mode)
-			case "$2" in
-				-*) echo "Please provide a valid mode option to -m"; usage; exit 1 ;; 
-                        	*) if [[ $2 == hpc ]]; then
-                                	root="$PBS_O_WORKDIR"
-                                	echo "root=$root"
-                                	echo "Loading modules"
-                                	. /etc/profile.d/modules.sh >/dev/null 2>&1
-                                	module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
-                        	elif [[ $2 == local ]]; then
-                                	root="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
-                                	echo "root=$root"
-                        	else
-                                	echo "Please provide a valid mode option to -m"; usage; exit 1
-                        	fi ;;
 			esac ;;
 
                 --numproc)
@@ -152,12 +155,15 @@ while true ; do
         esac
 done
 
+
 # Step 0
 echo ""
 echo "=============================================================================="
 echo " Setting up workflow ..."
 echo "=============================================================================="
 echo ""
+
+bin=${maindir}/bin
 
 data=${outputdir}/data
 vcffiles=${data}/vcffiles

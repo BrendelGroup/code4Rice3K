@@ -4,22 +4,24 @@ shopt -s extglob
 
 # Create work environment
 maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
+
 cd $maindir
 mkdir -p reference src bin bamfiles data
-echo "data=$data"
-cd $data
-mkdir -p vcffiles splitchromosomefiles mergedchromosomefiles alignmentfiles
-cd $maindir
 
 reference=${maindir}/reference
 src=${maindir}/src
 bin=${maindir}/bin
 bamfiles=${maindir}/bamfiles
-data=${outputdir}/data
+data=${maindir}/data
+
+cd $data
+mkdir -p vcffiles splitchromosomefiles mergedchromosomefiles alignmentfiles
 vcffiles=${data}/vcffiles
 splitchromosomefiles=${data}/splitchromosomefiles
 mergedchromosomefiles=${data}/mergedchromosomefiles
 alignmentfiles=${data}/alignmentfiles
+
+cd $maindir
 
 # Check if the user specified that this is a High Performance Computing environment
 system_type=${1:-}
