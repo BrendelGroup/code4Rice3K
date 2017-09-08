@@ -201,10 +201,7 @@ function merge_chromosome() {
         chromosome=$1
         vcf-merge *${chromosome}*.vcf.gz > ../mergedchromosomefiles/${chromosome}.merge.vcf
         # The awk command filters any Multiple Nucleotide Polymorphisms, and any sites that for some reason  are called as '<NON_REF>'
-        < ../mergedchromosomefiles/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} 
-length($4) 
-== 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) && ( ($5 !~ /^[ACGT],<NON_REF>/) || ($0 !~ /2\/2/) ) && ( ($5 !~ /^[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /3\/3/) ) && ( ($5 !~ 
-/^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' > ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
+        < ../mergedchromosomefiles/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} length($4) == 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) && ( ($5 !~ /^[ACGT],<NON_REF>/) || ($0 !~ /2\/2/) ) && ( ($5 !~ /^[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /3\/3/) ) && ( ($5 !~ /^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' > ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
         bgzip ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
         tabix ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf.gz
 }
@@ -249,7 +246,7 @@ wait
 
 # Step 2
 if [[ $runstep2 == 1 ]]; then
-        echo ""
+	echo ""
         echo "=============================================================================="
         echo "Step 2 Assemble a VCF file containing all called SNPs ..."
         echo "=============================================================================="
@@ -258,7 +255,7 @@ if [[ $runstep2 == 1 ]]; then
 	# After the chromosomes have been individually merged and cleaned, they can be reassembled into one VCF file containing 
 	# all the sites that were called in all the input cultivars and contain at least one SNP.
 	cd $mergedchromosomefiles
-	vcf-concat chr*.cleaned.vcf.gz > ${filename%.*}.merge.cleaned.vcf
+	vcf-concat chr*.merge.cleaned.vcf.gz > ${filename%.*}.merge.cleaned.vcf
 	
 	# In order to make trees, random sites from the VCF are selected and turned into a FASTA alignment.
 	# First the random sites are turned into a smaller VCF
@@ -283,7 +280,7 @@ if [[ $runstep3 == 1 ]]; then
 fi
 
 # Step 4
-if [[ runstep4 == 1 ]]; then
+if [[ $runstep4 == 1 ]]; then
         echo ""
         echo "=============================================================================="
         echo "Step 4 Generating alignment ..."
