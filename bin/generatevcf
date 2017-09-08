@@ -44,12 +44,6 @@ function usage() {
 
 if [ -z "$*" ]; then usage ; exit 1 ; fi
 
-
-# Set default main and bin directories:
-#scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-#maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
-
-
 # Set variable steps2run as an array 
 declare -a steps2run
 steps2run=(step1 step2 step3 step4)
@@ -57,11 +51,7 @@ startfromstep=""
 stopatstep=""
 runonlystep=""
 
-gatk="java -jar $src/GenomeAnalysisTK.jar"
-
 # Default option settings:
-#outputdir=$maindir
-#configfile=$maindir/bin/code4Rice3K.conf
 nct=1
 nt=1
 
@@ -97,7 +87,7 @@ while true ; do
 				elif [[ $2 == local ]]; then
 					maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
 					outputdir=$maindir
-					configfile=$maindir/bin/code4Rice3K
+					configfile=$maindir/bin/code4Rice3K.conf
 					echo "maindir=$maindir"
 				else
 					echo "Please provide a valid mode option when using -m"; usage; exit 1
@@ -173,6 +163,8 @@ reference=${maindir}/reference
 src=${maindir}/src
 bin=${maindir}/bin
 bamfiles=${maindir}/bamfiles
+
+gatk="java -jar $src/GenomeAnalysisTK.jar"
 
 data=${outputdir}/data
 vcffiles=${data}/vcffiles

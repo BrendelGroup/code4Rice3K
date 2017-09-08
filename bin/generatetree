@@ -15,8 +15,8 @@ function usage() {
                 Code4Rice3K Help Section:
                 =========================
 
-                Usage: $0 -m <mode> -c <configfile> -i <listofcultivars> -o <path> -m --numproc <cpu_threads> --numdata <data_threads>
-                Example: $0 -m local -c ~/Home/MyFiles/myconfigfile.conf -i mylist.txt -o ~/Downloads/ --numproc 12 --numdata 12
+                Usage: $0 -m <mode> -c <configfile> -i <listofcultivars> -o <path>
+                Example: $0 -m local -c ~/Home/MyFiles/myconfigfile.conf -i mylist.txt -o ~/Downloads/
                 
                 1) Mandatory options:
                 -m|--mode <string>               :       Either "local" if run locally, or "hpc" if run on HPC computer
@@ -25,8 +25,6 @@ function usage() {
                 2) Optional setings:
 		-c|--configfile <path>		 :	 Configuration file for the code4Rice3K workflow
 		-o|--outputdir <string>	         :	 Directory path for the output files
-		--numproc <int>       		 :       The number of CPU threads used by GATK (4-12 is recommended)
-                --numdata <int>      		 :       The number of data threads used by GATK (6-24 is recommended)
                 --startfromstep <string>   	 :       Indicate the starting step, must be between step1-step4 (see below) 
                 --stopatstep <string>      	 :       Indicate the last step, must be between step1-step4 (see below)
                 --runonlystep <string>     	 :       Indicate a single step to run, e.g. step1 or step3 (see below)
@@ -45,21 +43,12 @@ function usage() {
 
 if [ -z "$*" ]; then usage ; exit 1 ; fi
 
-# Set default main and bin directories:
-#scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-#maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
-
-
 # Set variable steps2run as an array
 declare -a steps2run
 steps2run=(step1 step2 step3 step4)
 startfromstep=""
 stopatstep=""
 runonlystep=""
-
-# Default option settings:
-#outputdir=$maindir
-#configfile=$scriptdir/code4Rice3K.conf
 
 function readconfigfile {
 if [ ! -e "$1" ] ; then
@@ -72,7 +61,7 @@ raxmlOptions2=`grep '^raxmlOptions2=' "$1" | awk -F"=" '{print $2}'`
 }
 
 # Parsing command line arguments:
-OPTIONS=`getopt -o c:i:o:m:h --long configfile:,inputlist:,outputdir:,mode:,numproc:,numdata:,startfromstep,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"`
+OPTIONS=`getopt -o c:i:o:m:h --long mode:,configfile:,inputlist:,outputdir:,startfromstep:,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"`
 if [ $? !+ 0 ] ; then echo " " ; echo "Could not parse options (see above) ..." >&2 ; usage ; exit 1 ; fi
 
 eval set -- "$OPTIONS"
@@ -104,6 +93,8 @@ while true ; do
 			case "$2" in
 				-*) echo "Please load code4Rice3K configuation file"; usage; exit ;;
 				*) configfile=$2; shift 2 ;;
+			esac ;;
+
                 -i|--inputlist)
 			case "$2" in
 				-*) echo "Please provide a valid list with cultivar names when using -i"; usage; exit 1 ;;
@@ -114,18 +105,6 @@ while true ; do
 			case "$2" in
 				-*) echo "Please designate an output path option when using -o"; usage; exit 1 ;;
 				*) outputdir=$2 ; shift 2 ;;
-			esac ;;
-
-                --numproc)
-			case "$2" in
-				-*) echo "Please provide a valid integer for the number of cpu threads when using --nct"; usage; exit 1 ;;
-                        	*) nct=$2 ; shift 2 ;;
-			esac ;;
-
-                --numdata)
-			case "$2" in 
-				-*) echo " please provide a valid integer for the number of data threads when using --nt"; usage; exit 1 ;;
-                        	*) nt=$2 ; shift 2 ;;
 			esac ;;
 
                 --startfromstep)
