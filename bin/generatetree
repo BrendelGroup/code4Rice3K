@@ -86,7 +86,7 @@ while true ; do
                                 	echo "maindir=$maindir"
                         	else
                                 	echo "Please provide a valid mode option to -m"; usage; exit 1
-                        	fi ;;
+                        	fi ; shift 2 ;;
 			esac ;;
 
 		-c|--configfile)
