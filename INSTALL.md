@@ -178,11 +178,5 @@ export PATH=$PATH:/path_to_raxml_directory/raxmlHPC-PTHREADS
 
 ## Setup Instructions
 
-Once you have all the required software packages installed, run `bash ./bin/setup.sh` from the code4Rice3K directory.
-If you are running this script on a high-performance computing machine, please add the argument "hpc" to your command, it will 
-automatically load the necessary modules: `bash ./bin/setup.sh hpc`
-
-This script will:
-- Create some necessary subdirectories for this workflow
-- Download some software binaries used by the workflow
-- Download and index the reference genome used by the Rice3K Genomes project
+The only step left to be done is to prepare the reference genome for the variant calling.
+You can do this by executing the _xsetupReference_ in the _bin_ directory, which will install the _reference_ directory in your _code4Rice3K_ install directory.
