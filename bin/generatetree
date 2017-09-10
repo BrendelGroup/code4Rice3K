@@ -20,7 +20,7 @@ outputdir=${workingdir}
 
 # Default option settings:
 #
-numproc=1
+nthreads=2
 
 
 # Setting up which steps in the workflow to run (Default: all)
@@ -40,7 +40,7 @@ function usage() {
                 =========================
 
                 Usage: $0 -c <configfile> -i <listofcultivars> -o <path>
-                Example: $0 -c ~/Home/MyFiles/myconfigfile.conf -i mylist.txt -o ~/Downloads/
+                Example: $0 -c ~/Home/MyFiles/myconfigfile.conf -i mylist.txt -o myoutput -n 12
                 
                 1) Mandatory options:
                 -i|--inputlist <textfile>	 :       List containing the names of all cultivars to be inferred
@@ -48,6 +48,7 @@ function usage() {
                 2) Optional setings:
 		-c|--configfile <path>		 :	 Configuration file for the code4Rice3K workflow
 		-o|--outputdir <string>	         :	 Directory path for the output files
+		-n|--nthreads			 :       number of threads to use for raxml
                 --startfromstep <string>   	 :       Indicate the starting step, must be between step1-step4 (see below) 
                 --stopatstep <string>      	 :       Indicate the last step, must be between step1-step4 (see below)
                 --runonlystep <string>     	 :       Indicate a single step to run, e.g. step1 or step3 (see below)
@@ -109,7 +110,7 @@ cd $workingdir
 ##### Process command line arguments: #####
 #
 
-OPTIONS=`getopt -o c:i:o:h --long configfile:,inputlist:,outputdir:,startfromstep:,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"`
+OPTIONS=`getopt -o c:i:o:n:h --long configfile:,inputlist:,outputdir:,nthreads:,startfromstep:,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"`
 if [ $? != 0 ] ; then echo " " ; echo "Could not parse options (see above) ..." >&2 ; usage ; exit 1 ; fi
 
 eval set -- "$OPTIONS"
@@ -132,6 +133,12 @@ while true ; do
 			case "$2" in
 				-*) echo "Please designate an output path option when using -o"; usage; exit 1 ;;
 				*) outputdir=$2 ; shift 2 ;;
+			esac ;;
+
+                -n|--nthreads)
+			case "$2" in
+				-*) echo "Please specify the number of threads to use with the -n option"; usage; exit 1 ;;
+                        	*) nthreads=$2 ; shift 2 ;;
 			esac ;;
 
                 --startfromstep)
@@ -299,7 +306,7 @@ if [[ $runstep4 == 1 ]]; then
 	#raxmlHPC -f d -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -p 12345 -s ${fasta} 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
 
 	# Version for Karst/Carbonate. PTHREADS version w/ 12 threads. This REQUIRES at least 12 processors.
-	raxmlHPC-PTHREADS ${raxmlOptions} -n ${filename%.*} -s ${fasta} 2>&1 > RAxML_${filename%.*}.log || touch RAxML_${filename%.*}.ERROR
+	raxmlHPC-PTHREADS -T $nthreads ${raxmlOptions} -n ${filename%.*} -s ${fasta} 2>&1 > RAxML_${filename%.*}.log || touch RAxML_${filename%.*}.ERROR
 	echo "RAxML alignment file created"
 	echo ""
 fi
