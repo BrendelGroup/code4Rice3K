@@ -8,24 +8,51 @@
 
 shopt -s extglob
 
+# Set the install directory (the below assumes that the code4Rice3K scripts
+# are in the same directory as the code4Rice3K.conf file):
+#
+installdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+configfile=${installdir}/code4Rice3K.conf
+reference=${installdir}/../reference
+workingdir="$( pwd )"
+bamfiledir=${workingdir}/bamfiledir
+outputdir=${workingdir}
+
+
+# Default option settings:
+#
+nt=1
+nct=1
+
+
+# Setting up which steps in the workflow to run (Default: all)
+#
+declare -a steps2run
+steps2run=(step1 step2 step3 step4)
+startfromstep=""
+stopatstep=""
+runonlystep=""
+
+
 # Help menu
 function usage() {
 	echo "
 		Code4Rice3K Help Section:
 		=========================
 
-		Usage: $0 -m <mode> -c <configfile> -i <cultivar> -o <path> --numproc <cpu_threads> --numdata <data_threads>
-		Example: $0 -m local -c ~/Home/MyFiles/myconfigfile.conf -i sample-1 -o ~/Downloads/ -m local --numproc 4 --numdata 12
+		Usage: $0 -c <configfile> -i <cultivar> -o <path> --nt <data_threads> --nct <cpu_threads_per_data_thread>
+		Example: $0 -c ~/Home/MyFiles/myconfigfile.conf -i sample-1 -o ~/Downloads/ --nt 6 --nct 4
 		
 		1) Mandatory options:
-		-m|--mode <string>		:	Either "local" if run locally, or "hpc" if run on HPC computer
 		-i|--infile <string>		:	The name of the chosen rice cultivar
 
 		2) Optional setings:
 		-c|--configfile <path>		:	This is the config file for code4Rice3K workflow
+		-b|--bamfiledir <path>		:	location of bam files
+		-r|--reference <path>		:	location of reference genome
 		-o|--outputdir <path>		:	Directory path for the output files
-		--numproc <int>			:	The number of CPU threads used by GATK (4-12 is recommended)
-		--numdata <int>			:	The number of data threads used by GATK (6-24 is recommended)
+		--nt <int>			:	The number of data threads used by GATK (6-24 is recommended)
+		--nct <int>			:	The number of CPU threads used by GATK (4-12 is recommended)
 		--startfromstep <string>	:	Indicate the starting step, must be between step1-step4 (see below) 
 		--stopatstep <string>		:	Indicate the last step, must be between step1-step4 (see below)
 		--runonlystep <string>		:	Indicate a single step to run, e.g. step1 or step3 (see below)
@@ -44,16 +71,6 @@ function usage() {
 
 if [ -z "$*" ]; then usage ; exit 1 ; fi
 
-# Set variable steps2run as an array 
-declare -a steps2run
-steps2run=(step1 step2 step3 step4)
-startfromstep=""
-stopatstep=""
-runonlystep=""
-
-# Default option settings:
-nct=1
-nt=1
 
 function readconfigfile {
 if [ ! -e "$1" ] ; then
@@ -61,43 +78,36 @@ if [ ! -e "$1" ] ; then
 	echo "Fatal error: code4Rice3K config file $1 does not exist. Please check"
 	exit 1
 fi
+gatk=`grep '^gatk=' "$1" | awk -F"=" '{print $2}'` 
 haplotypecallerOptions=`grep '^haplotypecallerOptions=' "$1" | awk -F"=" '{print $2}'` 
 genotypegvcfsOptions=`grep '^genotypegvcfsOptions=' "$1" | awk -F"=" '{print $2}'` 
 }
 
+
 # Parsing command line arguments:
-OPTIONS=`getopt -o m:c:i:o:h --long mode:,configfile:,infile:,outputdir:,numproc:,numdata:,startfromstep:,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"` 
+OPTIONS=`getopt -o c:b:r:i:o:h --long configfile:,bamfiledir:,reference:,infile:,outputdir:,nt:,nct:,startfromstep:,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"` 
 if [ $? != 0 ] ; then echo " " ; echo "Could not parse options (see above) ..." >&2 ; usage ; exit 1 ; fi
 
 eval set -- "$OPTIONS"
 
 while true ; do
 	case "$1" in
-		-m|--mode)
-			case "$2" in
-				-*) echo "Please provide a valid mode option to -m"; usage; exit 1 ;;
-				*) if [[ $2 == hpc ]]; then
-					maindir="$PBS_O_WORKDIR"
-					outputdir=$maindir
-					configfile=$maindir/bin/code4Rice3K.conf
-					echo "maindir=$maindir"
-					echo "Loading modules"
-					. /etc/profile.d/modules.sh >/dev/null 2>&1
-					module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
-				elif [[ $2 == local ]]; then
-					maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
-					outputdir=$maindir
-					configfile=$maindir/bin/code4Rice3K.conf
-					echo "maindir=$maindir"
-				else
-					echo "Please provide a valid mode option when using -m"; usage; exit 1
-				fi ; shift 2 ;;
-			esac ;;
-
 		-c|--configfile)
 			case "$2" in
 				-*) echo "Please provide a code4Rice3K configfile when using -c"; usage; exit 1 ;;
 				*) configfile=$2 ; shift 2 ;;
+			esac ;;
+
+		-b|--bamfiledir)
+			case "$2" in
+				-*) echo "Please provide the location of the bamfile directory when using -b"; usage; exit 1 ;;
+				*) bamfiledir=$2 ; shift 2 ;;
+			esac ;;
+
+		-r|--reference)
+			case "$2" in
+				-*) echo "Please provide the location of the reference genome directory when using -r"; usage; exit 1 ;;
+				*) reference=$2 ; shift 2 ;;
 			esac ;;
 
 		-i|--infile)
@@ -112,16 +122,16 @@ while true ; do
 				*) outputdir=$2 ; shift 2 ;;
 			esac ;;
 
-		--numproc)
-			case "$2" in
-				-*) echo "Please provide a valid integer for number of cpu threads when using -nct"; usage; exit 1 ;;
-				*) nct=$2 ; shift 2 ;;
-			esac ;;
-
-		--numdata)
+		--nt)
 			case $2 in
 				-*) echo "Please provide a valid integer for number of data threads when using -nt"; usage; exit 1 ;;
 				*) nt=$2 ; shift 2 ;;
+			esac ;;
+
+		--nct)
+			case "$2" in
+				-*) echo "Please provide a valid integer for number of CPU threads per data thread when using --nct"; usage; exit 1 ;;
+				*) nct=$2 ; shift 2 ;;
 			esac ;;
 
 		--startfromstep)
@@ -152,42 +162,6 @@ while true ; do
 done
 
 
-# Step 0
-echo ""
-echo "=============================================================================="
-echo " Setting up workflow ..."
-echo "=============================================================================="
-echo ""
-
-reference=${maindir}/reference
-src=${maindir}/src
-bin=${maindir}/bin
-bamfiles=${maindir}/bamfiles
-
-gatk="java -jar $src/GenomeAnalysisTK.jar"
-
-data=${outputdir}/data
-vcffiles=${data}/vcffiles
-splitchromosomefiles=${data}/splitchromosomefiles
-mergedchromosomefiles=${data}/mergedchromosomefiles
-alignmentfiles=${data}/alignmentfiles
-
-echo "Now making"
-echo "outputdir=$outputdir"
-echo "maindir=$maindir"
-
-mkdir -p ${outputdir}/data 
-echo "data=$data"
-cd $data
-mkdir -p $vcffiles $splitchromosomefiles $mergedchromosomefiles $alignmentfiles
-cd $maindir
-
-if [ ! -d "$outputdir" ] ; then
-	echo ""
-	echo "Fatal error: Output directory $outputdir does not exist.  Please check."
-	exit 1
-fi
-
 readconfigfile $configfile
 
 # Control which step to run:
@@ -212,6 +186,15 @@ if [[ $runonlystep != '' ]] ; then
 	steps2run=($runonlystep)
 fi 
 
+
+# Step 0
+#
+echo ""
+echo "=============================================================================="
+echo " Setting up workflow ..."
+echo "=============================================================================="
+echo ""
+
 runstep1=0
 runstep2=0
 runstep3=0
@@ -223,7 +206,15 @@ for step in ${steps2run[@]} ; do
 	if [[ $step == "step4" ]] ; then runstep4=1 ; fi
 done
 
-cd $maindir
+if [ ! -d "$outputdir" ] ; then
+        echo ""
+        echo "... new output directory $outputdir will be created in your working directory."
+	mkdir $outputdir
+fi
+
+cd $outputdir
+mkdir -p vcffiles splitchromosomefiles
+
 
 #Step 1
 if [ $runstep1 == 1 ] ; then
@@ -235,7 +226,8 @@ if [ $runstep1 == 1 ] ; then
 	echo "=============================================================================="
 	echo ""
 
-	cd $bamfiles
+	cd ${workingdir}
+	cd ${bamfiledir}
 	if [[ ! -e ${cultivar}.realigned.bam.bai ]]; then
         	wget https://s3.amazonaws.com/3kricegenome/Nipponbare/${cultivar}.realigned.bam
         	samtools index ${cultivar}.realigned.bam
@@ -245,15 +237,16 @@ fi
 
 # Step 2
 if [ $runstep2 == 1 ] ; then
-                                         	echo ""
+        echo ""
 	echo "=============================================================================="
 	echo "Step 2 Generating GVCF file from .bam ..."
 	echo "=============================================================================="
 	echo ""
 
 	# The GATK tool Haplotype Caller is used to compare the bam file with the reference genome and generate a gvcf file
-	cd $maindir
-	$gatk ${haplotypecallerOptions} -R ${reference}/IRGSP-1.0_genome.fasta -I $bamfiles/${cultivar}.realigned.bam -o $vcffiles/${cultivar}.g.vcf -nct ${nct}
+	cd ${workingdir}
+	echo "$gatk ${haplotypecallerOptions} -R ${reference}/IRGSP-1.0_genome.fasta -I $bamfiledir/${cultivar}.realigned.bam -o ${outputdir}/vcffiles/${cultivar}.g.vcf -nct ${nct}"
+	$gatk ${haplotypecallerOptions} -R ${reference}/IRGSP-1.0_genome.fasta -I $bamfiledir/${cultivar}.realigned.bam -o ${outputdir}/vcffiles/${cultivar}.g.vcf -nct ${nct}
 	echo "GVCF file created"
 	echo ""
 fi
@@ -268,8 +261,8 @@ if [ $runstep3 == 1 ] ; then
 	# The GATK tool GenotypeGVCFs takes the gvcf file and produces a normal vcf.
 	# The option -allSites is necessary for our purposes, so that called sites that match the reference 
 	# will be able to be compared to SNPs in other cultivars.
-	cd $maindir
-	$gatk ${genotypegvcfsOptions} -R ${reference}/IRGSP-1.0_genome.fasta -V $vcffiles/${cultivar}.g.vcf -o $vcffiles/${cultivar}.full.vcf -nt ${nt}
+	cd ${workingdir}
+	$gatk ${genotypegvcfsOptions} -R ${reference}/IRGSP-1.0_genome.fasta -V ${outputdir}/vcffiles/${cultivar}.g.vcf -o ${outputdir}/vcffiles/${cultivar}.full.vcf -nt ${nt}
 	echo "VCF file created"
 	echo ""
 fi
@@ -284,8 +277,7 @@ if [ $runstep4 == 1 ] ; then
 	# Before merging VCFs from different cultivars, it is useful to remove indels and uncalled or heterozygous sites with bcftools view.
 	# It is also expedient to split the VCF by chromosome so that merges can be performed with some degree of parallelism.
 	# This step is not necessary if a merge is not planned.
-	cd $vcffiles
-	
+	cd ${outputdir}/vcffiles
         bgzip ${cultivar}.full.vcf && tabix -f ${cultivar}.full.vcf.gz
 	#TODO Make this more sensible about parallelizing. As is, it will be really inefficient on a machine with fewer than 12 processors
         for chromosome in chr{01,02,03,04,05,06,07,08,09,10,11,12}; do (

@@ -9,22 +9,46 @@
 
 shopt -s extglob
 
-# help menu
+# Set the install directory (the below assumes that the code4Rice3K scripts
+# are in the same directory as the code4Rice3K.conf file):
+#
+installdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+configfile=${installdir}/code4Rice3K.conf
+workingdir="$( pwd )"
+outputdir=${workingdir}
+
+
+# Default option settings:
+#
+nthreads=2
+
+
+# Setting up which steps in the workflow to run (Default: all)
+#
+declare -a steps2run
+steps2run=(step1 step2 step3 step4)
+startfromstep=""
+stopatstep=""
+runonlystep=""
+
+
+
+# Help menu:
 function usage() {
         echo "
                 Code4Rice3K Help Section:
                 =========================
 
-                Usage: $0 -m <mode> -c <configfile> -i <listofcultivars> -o <path>
-                Example: $0 -m local -c ~/Home/MyFiles/myconfigfile.conf -i mylist.txt -o ~/Downloads/
+                Usage: $0 -c <configfile> -i <listofcultivars> -o <path>
+                Example: $0 -c ~/Home/MyFiles/myconfigfile.conf -i mylist.txt -o myoutput -n 12
                 
                 1) Mandatory options:
-                -m|--mode <string>               :       Either "local" if run locally, or "hpc" if run on HPC computer
                 -i|--inputlist <textfile>	 :       List containing the names of all cultivars to be inferred
 
                 2) Optional setings:
 		-c|--configfile <path>		 :	 Configuration file for the code4Rice3K workflow
 		-o|--outputdir <string>	         :	 Directory path for the output files
+		-n|--nthreads			 :       number of threads to use for raxml
                 --startfromstep <string>   	 :       Indicate the starting step, must be between step1-step4 (see below) 
                 --stopatstep <string>      	 :       Indicate the last step, must be between step1-step4 (see below)
                 --runonlystep <string>     	 :       Indicate a single step to run, e.g. step1 or step3 (see below)
@@ -43,12 +67,6 @@ function usage() {
 
 if [ -z "$*" ]; then usage ; exit 1 ; fi
 
-# Set variable steps2run as an array
-declare -a steps2run
-steps2run=(step1 step2 step3 step4)
-startfromstep=""
-stopatstep=""
-runonlystep=""
 
 function readconfigfile {
 if [ ! -e "$1" ] ; then
@@ -56,39 +74,49 @@ if [ ! -e "$1" ] ; then
         echo "Fatal error: code4Rice3K config file $1 does not exist. Please check"
         exit 1
 fi
-raxmlOptions1=`grep '^raxmlOptions1=' "$1" | awk -F"=" '{print $2}'`
-raxmlOptions2=`grep '^raxmlOptions2=' "$1" | awk -F"=" '{print $2}'`
+raxmlOptions=`grep '^raxmlOptions=' "$1" | awk -F"=" '{$1=""; print $0}'`
 }
 
-# Parsing command line arguments:
-OPTIONS=`getopt -o c:i:o:m:h --long mode:,configfile:,inputlist:,outputdir:,startfromstep:,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"`
-if [ $? !+ 0 ] ; then echo " " ; echo "Could not parse options (see above) ..." >&2 ; usage ; exit 1 ; fi
+
+function merge_chromosome() {
+#TODO Add an argument that determines which cultivars are merged. Right now it's indiscriminate.
+        chromosome=$1
+        vcf-merge *${chromosome}*.vcf.gz > ../mergedchromosomefiles/${chromosome}.merge.vcf
+        # The awk command filters any Multiple Nucleotide Polymorphisms, and any sites that for some reason  are called as '<NON_REF>'
+        < ../mergedchromosomefiles/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} length($4) == 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) && ( ($5 !~ /^[ACGT],<NON_REF>/) || ($0 !~ /2\/2/) ) && ( ($5 !~ /^[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /3\/3/) ) && ( ($5 !~ /^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' > ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
+        bgzip ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
+        tabix ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf.gz
+}
+
+function randomsubsetvcf() {
+        # Takes a vcf file and an integer, outputs to stdout a VCF with $2 random sites from the original
+        file=$1
+        lines=$2
+
+        header_line_number=$(grep --line-number "^#CHROM" ${file} | cut -d":" -f1)
+        let vcf_line_number=$header_line_number+1
+
+        # The header region of the VCF file needs to be preserved
+        head -n "${header_line_number}" ${file}
+        # The 1000 random lines should only come from legitimate sites
+        shuf -n $lines <(tail --lines=+${vcf_line_number} ${file})
+}
+
+
+
+cd $workingdir
+
+
+##### Process command line arguments: #####
+#
+
+OPTIONS=`getopt -o c:i:o:n:h --long configfile:,inputlist:,outputdir:,nthreads:,startfromstep:,stopatstep:,runonlystep:,help -n 'code4Rice3K error' -- "$@"`
+if [ $? != 0 ] ; then echo " " ; echo "Could not parse options (see above) ..." >&2 ; usage ; exit 1 ; fi
 
 eval set -- "$OPTIONS"
 
 while true ; do
         case "$1" in
-                -m|--mode)
-			case "$2" in
-				-*) echo "Please provide a valid mode option to -m"; usage; exit 1 ;; 
-                        	*) if [[ $2 == hpc ]]; then
-                                	maindir="$PBS_O_WORKDIR"
-					outputdir=$maindir
-					configfile=$maindir/bin/code4Rice3K.conf
-                                	echo "maindir=$maindir"
-                                	echo "Loading modules"
-                                	. /etc/profile.d/modules.sh >/dev/null 2>&1
-                                	module load samtools java tabix bcftools vcftools/0.1.13 python >/dev/null 2>&1
-                        	elif [[ $2 == local ]]; then
-                                	maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
-					outputdir=$maindir
-					configfile=$maindir/bin/code4Rice3K.conf
-                                	echo "maindir=$maindir"
-                        	else
-                                	echo "Please provide a valid mode option to -m"; usage; exit 1
-                        	fi ; shift 2 ;;
-			esac ;;
-
 		-c|--configfile)
 			case "$2" in
 				-*) echo "Please load code4Rice3K configuation file"; usage; exit ;;
@@ -105,6 +133,12 @@ while true ; do
 			case "$2" in
 				-*) echo "Please designate an output path option when using -o"; usage; exit 1 ;;
 				*) outputdir=$2 ; shift 2 ;;
+			esac ;;
+
+                -n|--nthreads)
+			case "$2" in
+				-*) echo "Please specify the number of threads to use with the -n option"; usage; exit 1 ;;
+                        	*) nthreads=$2 ; shift 2 ;;
 			esac ;;
 
                 --startfromstep)
@@ -135,32 +169,6 @@ while true ; do
 done
 
 
-# Step 0
-echo ""
-echo "=============================================================================="
-echo " Setting up workflow ..."
-echo "=============================================================================="
-echo ""
-
-bin=${maindir}/bin
-
-data=${outputdir}/data
-vcffiles=${data}/vcffiles
-splitchromosomefiles=${data}/splitchromosomefiles
-mergedchromosomefiles=${data}/mergedchromosomefiles
-alignmentfiles=${data}/alignmentfiles
-
-mkdir -p ${outputdir}/data
-cd $data
-mkdir -p $vcffiles $splitchromosomefiles $mergedchromosomefiles $alignmentfiles
-cd $maindir
-
-if [ ! -d "$outputdir" ] ; then
-        echo ""
-        echo "Fatal error: Output directory $outputdir does not exist. Please check"
-        exit 1 
-fi
-
 readconfigfile $configfile
 
 # Control which step to run:
@@ -185,6 +193,15 @@ if [[ $runonlystep != '' ]] ; then
 	steps2run=($runonlystep)
 fi
 
+
+# Step 0
+#
+echo ""
+echo "=============================================================================="
+echo " Setting up workflow ..."
+echo "=============================================================================="
+echo ""
+
 runstep1=0
 runstep2=0
 runstep3=0
@@ -196,36 +213,22 @@ for step in ${steps2run[@]} ; do
 	if [[ $step == "step4" ]] ; then runstep4=1 ; fi
 done
 
-function merge_chromosome() {
-#TODO Add an argument that determines which cultivars are merged. Right now it's indiscriminate.
-        chromosome=$1
-        vcf-merge *${chromosome}*.vcf.gz > ../mergedchromosomefiles/${chromosome}.merge.vcf
-        # The awk command filters any Multiple Nucleotide Polymorphisms, and any sites that for some reason  are called as '<NON_REF>'
-        < ../mergedchromosomefiles/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} length($4) == 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) && ( ($5 !~ /^[ACGT],<NON_REF>/) || ($0 !~ /2\/2/) ) && ( ($5 !~ /^[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /3\/3/) ) && ( ($5 !~ /^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' > ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
-        bgzip ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
-        tabix ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf.gz
-}
+if [ ! -d "${outputdir}/splitchromosomefiles" ] ; then
+        echo ""
+        echo "Fatal error: Output directory ${outputdir}/splitchromosomefiles not found."
+        echo "             generatetree relies on generatevcf-procuded output in that directory."
+        echo "             Please check."
+        exit 1 
+fi
 
-function randomsubsetvcf() {
-        # Takes a vcf file and an integer, outputs to stdout a VCF with $2 random sites from the original
-        file=$1
-        lines=$2
-
-        header_line_number=$(grep --line-number "^#CHROM" ${file} | cut -d":" -f1)
-        let vcf_line_number=$header_line_number+1
-
-        # The header region of the VCF file needs to be preserved
-        head -n "${header_line_number}" ${file}
-        # The 1000 random lines should only come from legitimate sites
-        shuf -n $lines <(tail --lines=+${vcf_line_number} ${file})
-}
-
-cd $maindir
+cd $outputdir
+mkdir -p mergedchromosomefiles alignmentfiles
 
 # Once all of the cultivars are cleaned and split, the chromosomes can be merged by vcf-merge.
 # "bcftools merge" is supposed to be faster, but seems to have a problem with something in the format of these files.
 # The merge function includes filters to remove any sites that don't have at least one alternate allele and one match to the reference, 
 # as well as any "Multiple Nucleotide Polymorphism" sites.
+
 
 # Step 1
 if [[ $runstep1 == 1 ]]; then
@@ -235,7 +238,8 @@ if [[ $runstep1 == 1 ]]; then
         echo "=============================================================================="
         echo ""
 
-	cd $splitchromosomefiles
+	cd ${workingdir}
+	cd ${outputdir}/splitchromosomefiles
 	for chromosome in {chr01,chr02,chr03,chr04,chr05,chr06,chr07,chr08,chr09,chr10,chr11,chr12}; do
 		merge_chromosome $chromosome &
 	done
@@ -254,7 +258,8 @@ if [[ $runstep2 == 1 ]]; then
 
 	# After the chromosomes have been individually merged and cleaned, they can be reassembled into one VCF file containing 
 	# all the sites that were called in all the input cultivars and contain at least one SNP.
-	cd $mergedchromosomefiles
+	cd ${workingdir}
+	cd ${outputdir}/mergedchromosomefiles
 	vcf-concat chr*.merge.cleaned.vcf.gz > ${filename%.*}.merge.cleaned.vcf
 	
 	# In order to make trees, random sites from the VCF are selected and turned into a FASTA alignment.
@@ -272,9 +277,10 @@ if [[ $runstep3 == 1 ]]; then
         echo "=============================================================================="
         echo ""
 
-	cd $alignmentfiles
+	cd $workingdir
+	cd ${outputdir}/alignmentfiles
 	# Then the VCF is turned into a fasta file with a python script.
-	python ${bin}/snp2seq.py ${filename%.*}.100000SNPs.vcf
+	python ${installdir}/snp2seq.py ${filename%.*}.100000SNPs.vcf
 	echo "Fasta file created"
 	echo ""
 fi
@@ -287,8 +293,9 @@ if [[ $runstep4 == 1 ]]; then
         echo "=============================================================================="
         echo ""
 	
-	cd $alignmentfiles
-	fasta="${alignmentfiles}/${filename%.*}.100000SNPs.vcf.fasta"
+	cd $workingdir
+	cd ${outputdir}/alignmentfiles
+	fasta="${filename%.*}.100000SNPs.vcf.fasta"
 	rm -f RAxML_${filename%.*}.ERROR
 	rm -f RAxML_${filename%.*}.log
 	rm -f RAxML*${filename%.*}*
@@ -299,13 +306,10 @@ if [[ $runstep4 == 1 ]]; then
 	#raxmlHPC -f d -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -p 12345 -s ${fasta} 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
 
 	# Version for Karst/Carbonate. PTHREADS version w/ 12 threads. This REQUIRES at least 12 processors.
-	raxmlHPC-PTHREADS ${raxmlOptions1} -n ${filename%.*} -p 12345 -s ${fasta} 2>&1 > RAxML_${filename%.*}.log || raxmlHPC-PTHREADS ${raxmlOptions2} -n ${filename%.*} -s ${fasta} 2>&1 > RAxML_${filename%.*}.log || touch RAxML_${filename%.*}.ERROR
+	raxmlHPC-PTHREADS -T $nthreads ${raxmlOptions} -n ${filename%.*} -s ${fasta} 2>&1 > RAxML_${filename%.*}.log || touch RAxML_${filename%.*}.ERROR
 	echo "RAxML alignment file created"
 	echo ""
 fi
-
-# -f a means bootstrap analysis and bestTree in one run.
-#raxmlHPC -f a -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -N 100 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR
 
 # This can go a lot faster with openmpi
 #mpirun -n 6 raxmlHPC-MPI-AVX -f a -m ASC_GTRGAMMA --asc-corr=lewis -n ${fasta%%.vcf.fasta} -N 1000 -p 12345 -s ${fasta} -x 12345 2>&1 > RAxML_${fasta%%.vcf.fasta}.log || touch RAxML_${fasta%%.vcf.fasta}.ERROR

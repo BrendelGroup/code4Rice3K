@@ -1,0 +1,26 @@
+#!/bin/bash
+## This is the install file for code4Rice3K
+shopt -s extglob
+
+PICARD=/usr/local/src/NGS_DIR/Picard/picard.jar
+
+# Create work environment
+maindir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
+
+cd $maindir
+mkdir -p reference 
+
+reference=${maindir}/reference
+
+# Download reference sequence
+cd $reference
+echo "Downloading reference fasta"
+wget -qO- "http://rapdb.dna.affrc.go.jp/download/archive/irgsp1/IRGSP-1.0_genome.fasta.gz" | gunzip - > IRGSP-1.0_genome.fasta
+
+# Prepare faidx index and dict of reference genome
+echo "Indexing reference"
+samtools faidx IRGSP-1.0_genome.fasta
+rm -f IRGSP-1.0_genome.dict
+java -jar ${PICARD} CreateSequenceDictionary R=IRGSP-1.0_genome.fasta O=IRGSP-1.0_genome.dict
+
+cd $maindir

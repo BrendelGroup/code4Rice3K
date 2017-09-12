@@ -1,8 +1,7 @@
-#!/bash/bin
+#!/bin/bash
+#
+# ... this script will check for prerequisites for code4Rice3K
 
-# This script will check for prerequisites for code4Rice3K:
-
-maindir="$(pwd)"
 
 function check_prereq() {
         echo "Checking for required software"
@@ -41,16 +40,16 @@ function check_prereq() {
         fi
 
         # check reference genome
-        if [[ ! -e ${reference}/IRGSP-1.0_genome.dict ]]; then
-                echo "Reference genome not found. You need to run setup.sh script" >&2
+        if [[ ! -e ${installdir}/../reference/IRGSP-1.0_genome.dict ]]; then
+                echo "Reference genome not found in standard directory ${installdir}/../reference."
+		echo "Check whether you should still run xsetupReference or specify a non-standard"
+		echo "location with the -r option when running generatevcf." >&2
                 exit 1
         fi
 
-	echo "System requirements are met"
+	echo "Requirements are met."
 }
 
-cd $maindir
+installdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 check_prereq
-
-exit
