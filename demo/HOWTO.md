@@ -78,8 +78,9 @@ After running `generatetree`, the output directory will contain RAxML output fil
 This can be visualized with tree viewing software such as [FigTree](http://tree.bio.ed.ac.uk/software/figtree/).
 
 ### Large-scale work:
-The rice genome data is huge and this process be time-consuming; the `generatevcf` step for a single cultivar might take up to 48 hours when run on an 8-cpu computer with 30GB of RAM.
+The rice genome data is huge and this process can be time-consuming; the `generatevcf` step for a single cultivar might take up to 48 hours when run on an 8-cpu computer with 30GB of RAM.
 So it is best, if possible, to use this workflow with a high-performance computing cluster (HPC). 
 These HPCs differ in their operating systems, softwares installed, and the way you interact with depending on which cluster you are using. 
+
 For example, we have used this workflow with [Karst](https://kb.iu.edu/d/bezu), one of the HPC machines available at Indiana University, where we can submit this workflow as a batch job using 
-[TORQUE])(https://kb.iu.edu/d/avmy) resorce manager. An example of a job submission script is provided under the `demo/` directory. 
+[TORQUE](https://kb.iu.edu/d/avmy) resorce manager. An example of a job submission script is provided under the `demo/` directory. 
