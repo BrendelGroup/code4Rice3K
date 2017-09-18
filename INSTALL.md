@@ -17,10 +17,10 @@ That being said, there are other softwares and tools that need to be installed o
 For convenience, a script is provided under the `bin/` directory to check for any required software.
 You can simply run it with `./xinstallcheckprerequisites`, and it should tell you if if finds an error. 
 
-If you want to install softwares on your linux machine, then you have two ways; 
+There is more than one way to install softwares on your linux machine; 
 You can run the `xinstallCode4Rice3K` script provided under the `bin/` directory, it will install all the necessary softwares,
-Or you can manually install these softwares using the short guide below.
-For either method, please make sure to keep track of paths of any installed binaries (see below for details).
+Or, if you prefer, you can manually install these softwares using the short guide below.
+For either methods, please make sure to keep track of paths of any installed binaries (see below for details).
 
 The versions listed are the ones that have been successfully tested.
 
