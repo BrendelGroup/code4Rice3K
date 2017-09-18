@@ -2,7 +2,7 @@
 
 ## Getting the Code4Rice3K Workflow
 
-You can simply obtain this entire workflow by cloning the Code4Rice3K into your local machine as follows:
+You can simply obtain this entire workflow by cloning the Code4Rice3K repository into your local machine as follows:
 
 ```bash
 git clone https://github.com/BrendelGroup/Code4Rice3K  
@@ -13,27 +13,14 @@ cd Code4Rice3K
 
 This workflow has been developed and tested on Linux machines only. 
 Specifically, Ubuntu and Red Hat Enterprise linux systems. 
-That being said, there are other softwares and tools that need to be installed on your machine (if they are not installed already) as they are intrinsic to this workflow.
-If you are running this workflow on a high performance computing (HPC) cluster, then the required softwares are part of modules environment management system.
-By loading different software packages, you can set and modify the programming environment as needed. 
-Now to check for the required packages, copy and paste the following command into your terminal and hit enter:
-```bash
-module load java python samtools bcftools vcftools tabix raxml
-```
-If everything is ok, then you should get a few lines informing you that these packages are installed along with their versions.
-You should see something like this:
-```bash
-Sun/Oracle Java SE Development Kit version 1.8.0_131 loaded.
-Python programming language version 2.7.13 loaded.
-samtools version 1.5 loaded.
-bcftools version 1.5 loaded.
-vcftools version 0.1.13 loaded.
-tabix version 0.2.6 loaded.
-raxml version 8.2.11 loaded.
-```
-If you want to check for the availability of a different version of a certain software, you can do this using the "module avail $package", e.g. `module avail java`.
-If your system missing some key softwares (you can tell when you load the modules), or if you want to install softwares on your linux machine, then please follow 
-the short guide below. 
+That being said, there are other softwares and tools that need to be installed on your machine (if they are not already installed) as they are intrinsic to this workflow.
+For convenience, a script is provided under the `bin/` directory to check for any required software.
+You can simply run it with `./xinstallcheckprerequisites`.
+If you want to install softwares on your linux machine, then you have two ways. 
+You can run the `xinstallCode4Rice3K` script provided under the `bin/` directory, it will install all the necessary softwares.
+Or you can manually install these softwares using the short guide below.
+For either method, please make sure to keep track of paths of any installed binaries (see below for details).
+
 The versions listed are the ones that have been successfully tested.
 
 ### Java (version 8)
@@ -45,10 +32,11 @@ You can check the availability and version of java on your machine by running:
 
 If you need to install it, please follow the instructions below:
 ```bash
-cd $YOUR_PREFERRED_DIRECTORY/local/
+mkdir $YOUR_PREFERRED_DIRECTORY/Java
+cd Java
 wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
 tar zxvf jdk-8u131-linux-x64.tar.gz
-# Now use "vim" or "nano" to add the following lines into your "/etc/profile":
+# Now use an editor like "vim" or "nano" to add the following lines into your "/etc/profile":
 # If you can't write to "/etc/profile", then make a custom script in "/etc/profile.d/" and add:
 export JAVA_HOME=path_to_jdk1.8.0_131_directory
 export PATH=$JAVA_HOME/bin:$PATH
@@ -64,7 +52,8 @@ You can do this by running:
 
 If you want to install it, use:
 ```bash
-cd $YOUR_PREFERRED_DIRECTORY/local/  
+mkdir $YOUR_PREFERRED_DIRECTORY/Samtools
+cd Samtools  
 wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5.tar.bz2  
 tar xvjf samtools-1.5.tar.bz2  
 cd samtools-1.5/
@@ -83,7 +72,8 @@ You can do this by:
 
 If you want to install it, use:
 ```bash
-cd $YOUR_PREFERRED_DIRECTORY/local/  
+mkdir $YOUR_PREFERRED_DIRECTORY/Tabix
+cd Tabix  
 wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2  
 tar xvjf tabix-0.2.6.tar.bz2
 cd tabix-0.2.6
@@ -102,7 +92,8 @@ You can do this by running:
 
 If you want to install it, use:
 ```bash
-cd $YOUR_PREFERRED_DIRECTORY/local/  
+mkdir $YOUR_PREFERRED_DIRECTORY/Bcftools
+cd Bcftools  
 wget https://github.com/samtools/bcftools/releases/download/1.5/bcftools-1.5.tar.bz2  
 tar xvjf bcftools-1.5.tar.bz2 
 cd bcftools-1.5/
@@ -111,7 +102,7 @@ make
 make install		# You may need to use "sudo make install"
 ```
 
-### Vcftools (version 0.1.13)
+### VCFtools (version 0.1.13)
 See http://vcftools.sourceforge.net for details. Last update: August 1, 2017.
 
 First, check the availability and version of vcftools on your machine. 
@@ -121,7 +112,8 @@ You can do this by running:
 
 If you want to install it, first you have to install **Tabix** (see above) then:
 ```bash
-cd YOUR_PREFERRED_DIRECTORY/local  
+mkdir YOUR_PREFERRED_DIRECTORY/VCFtools
+cd VCFtools  
 wget https://sourceforge.net/projects/vcftools/files/vcftools_0.1.13.tar.gz  
 tar zvxf vcftools_0.1.13.tar.gz
 cd vcftools_0.1.13 
@@ -144,6 +136,7 @@ If that is not the case and you want to install it, then there is more than one 
 ### Biopython (version 1.70)
 See http://biopython.org for details. Last update: August 1, 2017.
 
+
 If you have administrative privilage access on your machine, use the [package manager](http://biopython.org/wiki/Download#Packages) for best results. 
 Otherwise, we recommend using pip.
 ```bash
@@ -151,11 +144,39 @@ pip install biopython --user
 ```
 
 ### PyVCF (version 0.6.8)
-See https://pypi.python.org/pypi/PyVCF for details. Last upadate: August 1, 2017.
+See https://pypi.python.org/pypi/PyVCF for details. Last update: August 1, 2017.
 
 Same as installing biopython, you can use:
 ```bash
 pip install pyvcf --user
+```
+
+### Picard (version 2.10.0)
+See https://broadinstitute.github.io/picard/ for details. Last update: September 15, 2017. 
+
+```bash
+mkdir $YOUR_PREFERRED_DIRECTORY/Picard
+cd Picard/
+wget https://github.com/broadinstitute/picard/releases/download/2.10.9/picard.jar
+```
+You will need to set the path for Picard in the `xsetupReference` script under the `bin/` directory.
+Open the script using an editor, and change the path in the following line to where Picard is installed:
+```bash
+PICARD=/usr/local/src/NGS_DIR/Picard/picard.jar
+```
+
+### GATK (version 3.6)
+See https://software.broadinstitute.org/gatk/ for details. Last update: September 15, 2017.
+
+```bash
+mkdir $YOUR_PREFERRED_DIRECTORY/GATK
+cd GATK
+wget -qO- 'https://software.broadinstitute.org/gatk/download/auth?package=GATK-archive&version=3.6-0-g89b7209' | tar xfj -
+```
+You will need to set the path for GATK in the `code4Rice3K.conf` configuration file under the `bin/` directory.
+Open the file using an editor, and change the path in the following line to where GATK is installed:
+```bash
+gatk=java -jar /usr/local/src/code4Rice3K/GATK/GenomeAnalysisTK.jar
 ```
 
 ### RAxML (version 8.2.11)
@@ -168,6 +189,8 @@ You can do this by running:
 
 For installations, you will have to clone the RAxML repository from github:
 ```bash
+mkdir $YOUR_PREFERRED_DIRECTORY/RAxML
+cd RAxML
 git clone https://github.com/stamatak/standard-RAxML.git
 cd standard-RAxML/
 make -f Makefile.gcc
@@ -179,4 +202,4 @@ export PATH=$PATH:/path_to_raxml_directory/raxmlHPC-PTHREADS
 ## Setup Instructions
 
 The only step left to be done is to prepare the reference genome for the variant calling.
-You can do this by executing the _xsetupReference_ in the _bin_ directory, which will install the _reference_ directory in your _code4Rice3K_ install directory.
+You can do this by executing the `xsetupReference` in the `bin/` directory, which will install the `reference/` directory in your _code4Rice3K_ install directory.
