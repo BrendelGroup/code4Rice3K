@@ -46,9 +46,8 @@ echo "=========================================================="
 echo ""
 which java
 if [[ $? == 1 ]]; then
-	wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" 
-http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz tar zxvf 
-jdk-8u131-linux-x64.tar.gz
+	wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz 
+	tar zxvf jdk-8u131-linux-x64.tar.gz
 fi
 
 echo ""
@@ -142,6 +141,7 @@ if [[ $gatkjar == "" ]] ; then
 	mkdir GATK
 	cd GATK
 	wget -qO- 'https://software.broadinstitute.org/gatk/download/auth?package=GATK-archive&version=3.6-0-g89b7209' | tar xfj -
+	rm -r resources
 	cd ..
 fi
 
