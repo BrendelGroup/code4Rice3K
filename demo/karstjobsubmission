@@ -8,7 +8,7 @@
 #PBS -j oe
 #PBS -m abe
 #PBS -d /N/dc2/scratch/sialsaff/testing/code4Rice3K/
-#PBS -F '-c bin/code4Rice3K.conf -b bamfiledir -r reference/ -i sample-1 -o outputy/ --nct 4 --nt 12' 
+#PBS -F '-c bin/code4Rice3K.conf -b bamfiledir -r reference/ -i sample-1 -o output/ --nct 4 --nt 12' 
 
 ## Most HPC systems have their softwares installed as part of modules environment management system
 ## By loading different software packages, you can set and modify the programming environment as needed 
