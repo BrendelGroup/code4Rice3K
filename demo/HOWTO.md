@@ -34,7 +34,9 @@ This script takes the following arguments when used:
 
 An example of usage, assuming you are at the code4Rice3K main directory, run:
 
-`bash ./bin/generatevcf -c bin/code4Rice3K.conf -i IRIS_313-10603 -b bamfiledir -r reference --nt 12 --nct 4`  
+```bash
+bash ./bin/generatevcf -c bin/code4Rice3K.conf -i IRIS_313-10603 -b bamfiledir -r reference --nt 12 --nct 4
+```  
 
 You can use any cultivar name, however, for the sake of demonstration, use the provided "sample-1, sample-2,sample-3, or sample-4" as a cultivar name. 
 These are truncated files found under the `demo/` directory. 
@@ -65,7 +67,9 @@ This script takes the following arguments when used:
 
 An example of usage, assuming you are at the code4Rice3K main directory, run:
 
-`bash ./bin/generatetree -c bin/code4Rice3K.conf -i yourlist.txt -n 12`
+```bash
+bash ./bin/generatetree -c bin/code4Rice3K.conf -i yourlist.txt -n 12
+```
 
 Where _yourlist.txt_ is a list containing the accessions of all the cultivars you have processed using the first script separated by newlines.
 For convenience, the `demo/` directory contains a text file, testcultivar.txt, that contains four accessions (sample-1 to sample-4) for testing.
