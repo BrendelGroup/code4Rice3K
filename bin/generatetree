@@ -79,9 +79,12 @@ raxmlOptions=`grep '^raxmlOptions=' "$1" | awk -F"=" '{$1=""; print $0}'`
 
 
 function merge_chromosome() {
-#TODO Add an argument that determines which cultivars are merged. Right now it's indiscriminate.
-        chromosome=$1
-        vcf-merge *${chromosome}*.vcf.gz > ../mergedchromosomefiles/${chromosome}.merge.vcf
+	chromosome=$1
+	shift
+	cultivarlist=("${@}")
+	cultivarlist=("${cultivarlist[@]/%/.${chromosome}.*.vcf.gz}")
+	echo "Now running: vcf-merge ${cultivarlist[@]} > ../mergedchromosomefiles/${chromosome}.merge.vcf"
+	vcf-merge ${cultivarlist[@]} > ../mergedchromosomefiles/${chromosome}.merge.vcf
         # The awk command filters any Multiple Nucleotide Polymorphisms, and any sites that for some reason  are called as '<NON_REF>'
         < ../mergedchromosomefiles/${chromosome}.merge.vcf bcftools view --exclude-uncalled --exclude-types 'indels' --min-ac 2 --max-af 0.99 --genotype ^miss -O v | awk ' /^#/ {print} length($4) == 1 && ( ($5 != "<NON_REF>") || ($0 !~ /1\/1/) ) && ( ($5 !~ /^[ACGT],<NON_REF>/) || ($0 !~ /2\/2/) ) && ( ($5 !~ /^[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /3\/3/) ) && ( ($5 !~ /^[ACGT],[ATCG],[ATCG],<NON_REF>/) || ($0 !~ /4\/4/) ) {print} ' > ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
         bgzip ../mergedchromosomefiles/${chromosome}.merge.cleaned.vcf
@@ -126,7 +129,7 @@ while true ; do
                 -i|--inputlist)
 			case "$2" in
 				-*) echo "Please provide a valid list with cultivar names when using -i"; usage; exit 1 ;;
-				*) inputfile=$2 ; filename=${inputfile##*/} ; cultivarlist=$(cat $inputfile) ; shift 2 ;;
+				*) inputfile=$2 ; filename=${inputfile##*/} ; readarray -t cultivarlist < $inputfile ; shift 2 ;;
 			esac ;;
 
 		-o|--outputdir)
@@ -241,9 +244,10 @@ if [[ $runstep1 == 1 ]]; then
 	cd ${workingdir}
 	cd ${outputdir}/splitchromosomefiles
 	for chromosome in {chr01,chr02,chr03,chr04,chr05,chr06,chr07,chr08,chr09,chr10,chr11,chr12}; do
-		merge_chromosome $chromosome &
+		echo "Now running: merge_chromosome $chromosome ${cultivarlist[@]}"
+		merge_chromosome $chromosome ${cultivarlist[@]} &
 	done
-	echo "Finished merging chromosome"
+	echo "Finished merging individual chromosome data."
 	echo "" 
 fi
 wait
