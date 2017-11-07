@@ -28,7 +28,7 @@ def vcf_to_fasta(input_file_name):
                 sequences_dict[sample.sample].append(sample.gt_bases[0]) # This is taking the first base only. Adjust this if the input isn't heterozygous.
         #print("sequences_dict:")
         #print(sequences_dict)
-        bunch = [ SeqRecord(Seq("".join(sequences_dict[cultivar])), cultivar) for cultivar in sequences_dict]
+        bunch = [ SeqRecord(Seq("".join(sequences_dict[cultivar])), cultivar, description='') for cultivar in sequences_dict]
         #print("bunch: ")
         #print(bunch)
         SeqIO.write(bunch, input_file_name + ".fasta", "fasta")
