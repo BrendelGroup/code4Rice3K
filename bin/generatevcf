@@ -245,8 +245,8 @@ if [ $runstep2 == 1 ] ; then
 
 	# The GATK tool Haplotype Caller is used to compare the bam file with the reference genome and generate a gvcf file
 	cd ${workingdir}
-	echo "$gatk ${haplotypecallerOptions} -R ${reference}/IRGSP-1.0_genome.fasta -I $bamfiledir/${cultivar}.realigned.bam -o ${outputdir}/vcffiles/${cultivar}.g.vcf -nct ${nct}"
-	$gatk ${haplotypecallerOptions} -R ${reference}/IRGSP-1.0_genome.fasta -I $bamfiledir/${cultivar}.realigned.bam -o ${outputdir}/vcffiles/${cultivar}.g.vcf -nct ${nct}
+	echo "$gatk ${haplotypecallerOptions} -R ${reference}/IRGSP-1.0_genome.fasta -I $bamfiledir/${cultivar}.realigned.bam -o ${outputdir}/vcffiles/${cultivar}.g.vcf.gz -nct ${nct}"
+	$gatk ${haplotypecallerOptions} -R ${reference}/IRGSP-1.0_genome.fasta -I $bamfiledir/${cultivar}.realigned.bam -o ${outputdir}/vcffiles/${cultivar}.g.vcf.gz -nct ${nct}
 	echo "GVCF file created"
 	echo ""
 fi
@@ -262,9 +262,8 @@ if [ $runstep3 == 1 ] ; then
 	# The option -allSites is necessary for our purposes, so that called sites that match the reference 
 	# will be able to be compared to SNPs in other cultivars.
 	cd ${workingdir}
-	$gatk ${genotypegvcfsOptions} -R ${reference}/IRGSP-1.0_genome.fasta -V ${outputdir}/vcffiles/${cultivar}.g.vcf -o ${outputdir}/vcffiles/${cultivar}.full.vcf -nt ${nt}
-	cd ${outputdir}/vcffiles
-        bgzip ${cultivar}.full.vcf && tabix -f ${cultivar}.full.vcf.gz
+	echo "$gatk ${genotypegvcfsOptions} -R ${reference}/IRGSP-1.0_genome.fasta -V ${outputdir}/vcffiles/${cultivar}.g.vcf.gz -o ${outputdir}/vcffiles/${cultivar}.full.vcf.gz -nt ${nt}"
+	$gatk ${genotypegvcfsOptions} -R ${reference}/IRGSP-1.0_genome.fasta -V ${outputdir}/vcffiles/${cultivar}.g.vcf.gz -o ${outputdir}/vcffiles/${cultivar}.full.vcf.gz -nt ${nt}
 	echo "VCF file created"
 	echo ""
 fi
